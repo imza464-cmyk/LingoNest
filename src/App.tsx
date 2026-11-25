@@ -54,6 +54,12 @@ const AGE_BADGE: Record<AgeMode, { emoji: string; label: string }> = {
   master: { emoji: '🎓', label: 'Usta (15+)' },
 };
 
+const THEME_COLOR_BY_MODE: Record<AgeMode, string> = {
+  mini: '#EEF8FF',
+  explorer: '#EEF2FF',
+  master: '#090E1A',
+};
+
 export function App() {
   const [vault, setVault] = useState<VaultState>(() => loadVault());
   const [view, setView] = useState<AppView>('worlds');
@@ -71,12 +77,43 @@ export function App() {
     return vault.profiles.find((p) => p.id === vault.activeProfileId) ?? vault.profiles[0];
   }, [vault]);
 
-  // Synchronize document body theme for seamless full-viewport age metamorphosis
+  // Synchronize document body theme, meta theme-color, and native Android bridge
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.body.dataset.ageMode = activeProfile.ageMode;
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeMeta) {
+        themeMeta.setAttribute('content', THEME_COLOR_BY_MODE[activeProfile.ageMode]);
+      }
+    }
+    if (typeof window !== 'undefined') {
+      (
+        window as unknown as { AndroidBridge?: { setThemeMode?: (m: string) => void } }
+      ).AndroidBridge?.setThemeMode?.(activeProfile.ageMode);
     }
   }, [activeProfile.ageMode]);
+
+  // Register Android hardware/gesture back handler
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const win = window as unknown as { __lingonestGoBack?: () => boolean };
+    win.__lingonestGoBack = () => {
+      if (showParentModal) {
+        setShowParentModal(false);
+        return true;
+      }
+      if (view !== 'worlds') {
+        audioEngine.stopSpeaking();
+        audioEngine.stopListening();
+        setView('worlds');
+        return true;
+      }
+      return false;
+    };
+    return () => {
+      delete win.__lingonestGoBack;
+    };
+  }, [showParentModal, view]);
 
   const updateActiveProfile = useCallback((updater: (prev: LearnerProfile) => LearnerProfile) => {
     setVault((v) => ({
@@ -263,7 +300,9 @@ export function App() {
   const isInFocusedSession = view === 'play' || view === 'adult-practice';
 
   return (
-    <div className={`ln-shell ln-mode-${activeProfile.ageMode}`}>
+    <div
+      className={`ln-shell ln-mode-${activeProfile.ageMode}${!isInFocusedSession ? ' has-mobile-nav' : ''}`}
+    >
       {/* Age-Adaptive Top Navigation Bar */}
       <header className="ln-topbar">
         <button
@@ -400,7 +439,7 @@ export function App() {
           >
             <Globe size={16} />
             <span>{langMeta.flag}</span>
-            {!isMini && <span>{langMeta.nameTr}</span>}
+            {!isMini && <span className="ln-hide-mobile">{langMeta.nameTr}</span>}
           </button>
 
           <button
@@ -421,8 +460,16 @@ export function App() {
           >
             <ShieldCheck size={17} />
             <span>
-              {activeProfile.avatarEmoji}{' '}
-              {isMini ? ageBadge.emoji : `${activeProfile.name} • ${ageBadge.label}`}
+              {activeProfile.avatarEmoji}
+              {isMini ? (
+                <> {ageBadge.emoji}</>
+              ) : (
+                <>
+                  {' '}
+                  {activeProfile.name}
+                  <span className="ln-hide-mobile"> • {ageBadge.label}</span>
+                </>
+              )}
             </span>
           </button>
         </div>
@@ -524,6 +571,121 @@ export function App() {
           />
         )}
       </main>
+
+      {!isInFocusedSession && (
+        <nav className="ln-mobile-bottom-nav" aria-label="Mobil Gezinme">
+          {isMaster ? (
+            <>
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'worlds' ? 'active' : ''}`}
+                aria-current={view === 'worlds' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  setView('worlds');
+                }}
+              >
+                <Zap size={20} aria-hidden="true" />
+                <span>Stüdyo</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'adult-dialogues' ? 'active' : ''}`}
+                aria-current={view === 'adult-dialogues' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  setView('adult-dialogues');
+                }}
+              >
+                <MessageSquare size={20} aria-hidden="true" />
+                <span>Diyalog</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'phonetics' ? 'active' : ''}`}
+                aria-current={view === 'phonetics' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  setView('phonetics');
+                }}
+              >
+                <Ear size={20} aria-hidden="true" />
+                <span>Ses Lab</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${showParentModal ? 'active' : ''}`}
+                onClick={() => setShowParentModal(true)}
+              >
+                <BarChart3 size={20} aria-hidden="true" />
+                <span>Analitik</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'worlds' ? 'active' : ''}`}
+                aria-current={view === 'worlds' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                  setView('worlds');
+                }}
+              >
+                <Home size={20} aria-hidden="true" />
+                <span>{isMini ? 'Oyun' : 'Görevler'}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'living-world' ? 'active' : ''}`}
+                aria-current={view === 'living-world' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                  setView('living-world');
+                }}
+              >
+                <Sparkles size={20} aria-hidden="true" />
+                <span>{isMini ? 'Bahçem' : 'Dünyam'}</span>
+                {awakeCount > 0 && <em className="ln-mobile-nav-badge">{awakeCount}</em>}
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'stories' ? 'active' : ''}`}
+                aria-current={view === 'stories' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                  setView('stories');
+                }}
+              >
+                <BookOpen size={20} aria-hidden="true" />
+                <span>{isMini ? 'Masal' : 'Hikaye'}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'phonetics' ? 'active' : ''}`}
+                aria-current={view === 'phonetics' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                  setView('phonetics');
+                }}
+              >
+                <Ear size={20} aria-hidden="true" />
+                <span>{isMini ? 'Sesler' : 'Ses Lab'}</span>
+              </button>
+            </>
+          )}
+        </nav>
+      )}
 
       {showParentModal && (
         <ParentDashboardModal

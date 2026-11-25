@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Moon, Play, Sparkles, Volume2 } from 'lucide-react';
+import { Moon, Play, Sparkles, Volume2, X } from 'lucide-react';
 import type { LearnerProfile, VocabItem, WorldData } from '../types';
 import {
   cardKey,
@@ -227,6 +227,10 @@ export function LivingWorldScene({
     isItemAwakeInLivingWorld(profile.cards[cardKey(profile.targetLang, item.id)]),
   ).length;
 
+  const activeBubbleItem = activeBubbleItemId
+    ? activeWorld.items.find((it) => it.id === activeBubbleItemId) ?? null
+    : null;
+
   const handleTapAwakeFriend = (item: VocabItem) => {
     const phrase = item.langs[profile.targetLang];
     setActiveBubbleItemId(item.id);
@@ -434,6 +438,46 @@ export function LivingWorldScene({
             </div>
           );
         })}
+
+        {activeBubbleItem && (
+          <div className="ln-living-mobile-dock" role="status" aria-live="polite">
+            <span className="ln-living-dock-emoji" aria-hidden="true">
+              {activeBubbleItem.emoji}
+            </span>
+            <div className="ln-living-dock-content">
+              <div className="ln-living-dock-sound">✨ {activeBubbleItem.soundOnomatopoeia}</div>
+              <div className="ln-living-dock-sentence">
+                {activeBubbleItem.langs[profile.targetLang].microSentence}
+              </div>
+              <div className="ln-living-dock-meaning">
+                🇹🇷 {activeBubbleItem.turkishMeaning}
+                {profile.ageMode !== 'mini'
+                  ? ` • ${activeBubbleItem.langs[profile.targetLang].ipa}`
+                  : ''}
+              </div>
+            </div>
+            <div className="ln-living-dock-actions">
+              <button
+                type="button"
+                className="ln-living-dock-replay"
+                onClick={() => handleTapAwakeFriend(activeBubbleItem)}
+                aria-label={`${activeBubbleItem.langs[profile.targetLang].bareWord}: tekrar dinle`}
+                title="Tekrar dinle"
+              >
+                <Volume2 size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="ln-living-dock-close"
+                onClick={() => setActiveBubbleItemId(null)}
+                aria-label="Konuşma kartını kapat"
+                title="Kapat"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scene Footer Status */}

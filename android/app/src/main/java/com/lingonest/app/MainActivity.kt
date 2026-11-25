@@ -10,11 +10,20 @@ import android.graphics.Typeface
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -31,24 +40,37 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var rootView: FrameLayout
     private lateinit var webView: WebView
     private lateinit var splashOverlay: LinearLayout
     private lateinit var offlineOverlay: LinearLayout
+
     private var pendingWebPermission: PermissionRequest? = null
+    private var pendingSpeechLang: String? = null
+    private var speechRecognizer: SpeechRecognizer? = null
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        val req = pendingWebPermission
+        val webReq = pendingWebPermission
         pendingWebPermission = null
-        if (req != null) {
+        if (webReq != null) {
+            if (granted) webReq.grant(webReq.resources) else webReq.deny()
+        }
+
+        val lang = pendingSpeechLang
+        pendingSpeechLang = null
+        if (lang != null) {
             if (granted) {
-                req.grant(req.resources)
+                launchNativeSpeechRecognizer(lang)
             } else {
-                req.deny()
+                notifyJsSpeechError("not-allowed")
             }
         }
     }
@@ -57,9 +79,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        applyNativeBars("mini")
 
-        val root = FrameLayout(this).apply {
-            setBackgroundColor(Color.parseColor("#0F172A"))
+        rootView = FrameLayout(this).apply {
+            setBackgroundColor(Color.parseColor("#EEF8FF"))
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -71,38 +94,48 @@ class MainActivity : ComponentActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
-            setBackgroundColor(Color.parseColor("#0F172A"))
+            setBackgroundColor(Color.parseColor("#EEF8FF"))
             overScrollMode = View.OVER_SCROLL_NEVER
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
         }
 
         splashOverlay = buildSplashOverlay()
         offlineOverlay = buildOfflineOverlay()
         offlineOverlay.visibility = View.GONE
 
-        root.addView(webView)
-        root.addView(splashOverlay)
-        root.addView(offlineOverlay)
-        setContentView(root)
+        rootView.addView(webView)
+        rootView.addView(splashOverlay)
+        rootView.addView(offlineOverlay)
+        setContentView(rootView)
 
         configureWebView()
         loadLingoNest()
 
+        // Native Back button cooperates with LingoNest in-app navigation (closes modals/lessons cleanly!)
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (webView.canGoBack()) {
-                        webView.goBack()
-                    } else {
-                        isEnabled = false
-                        onBackPressedDispatcher.onBackPressed()
+                    webView.evaluateJavascript(
+                        "(function(){return typeof window.__lingonestGoBack==='function' ? !!window.__lingonestGoBack() : false;})()",
+                    ) { result ->
+                        if (result == "true") {
+                            return@evaluateJavascript
+                        }
+                        if (webView.canGoBack()) {
+                            webView.goBack()
+                        } else {
+                            isEnabled = false
+                            onBackPressedDispatcher.onBackPressed()
+                        }
                     }
                 }
             },
         )
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     private fun configureWebView() {
         val s = webView.settings
         s.javaScriptEnabled = true
@@ -116,7 +149,10 @@ class MainActivity : ComponentActivity() {
         s.displayZoomControls = false
         s.useWideViewPort = true
         s.loadWithOverviewMode = true
+        s.textZoom = 100
         s.cacheMode = if (isOnline()) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
+
+        webView.addJavascriptInterface(LingoAndroidBridge(), "AndroidBridge")
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
@@ -160,7 +196,7 @@ class MainActivity : ComponentActivity() {
                 if (offlineOverlay.visibility != View.VISIBLE) {
                     splashOverlay.animate()
                         .alpha(0f)
-                        .setDuration(260)
+                        .setDuration(240)
                         .withEndAction { splashOverlay.visibility = View.GONE }
                         .start()
                 }
@@ -177,6 +213,159 @@ class MainActivity : ComponentActivity() {
                     offlineOverlay.visibility = View.VISIBLE
                 }
             }
+        }
+    }
+
+    private fun applyNativeBars(mode: String) {
+        val (statusHex, navHex, lightIcons) = when (mode) {
+            "master" -> Triple("#090E1A", "#0B1120", false)
+            "explorer" -> Triple("#EEF2FF", "#FFFFFF", true)
+            else -> Triple("#EEF8FF", "#FFFDF6", true)
+        }
+        val statusColor = Color.parseColor(statusHex)
+        val navColor = Color.parseColor(navHex)
+        @Suppress("DEPRECATION")
+        window.statusBarColor = statusColor
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = navColor
+        val insets = WindowCompat.getInsetsController(window, window.decorView)
+        insets.isAppearanceLightStatusBars = lightIcons
+        insets.isAppearanceLightNavigationBars = lightIcons
+        if (::rootView.isInitialized) rootView.setBackgroundColor(statusColor)
+        if (::webView.isInitialized) webView.setBackgroundColor(statusColor)
+    }
+
+    private fun performNativeHaptic(kind: String) {
+        if (!::webView.isInitialized) return
+        when (kind) {
+            "tap" -> webView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            "success", "celebrate", "unlock" -> {
+                vibrateShort(if (kind == "celebrate") 38L else 22L)
+            }
+            "gentle-nudge" -> vibrateShort(14L)
+        }
+    }
+
+    private fun vibrateShort(ms: Long) {
+        runCatching {
+            val vib = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vib != null && vib.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vib.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vib.vibrate(ms)
+                }
+            }
+        }
+    }
+
+    private fun launchNativeSpeechRecognizer(bcp47: String) {
+        stopNativeSpeechInternal()
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            notifyJsSpeechError("unsupported")
+            return
+        }
+        val sr = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer = sr
+        sr.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+
+            override fun onError(error: Int) {
+                val reason = when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "no-speech"
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "not-allowed"
+                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "network"
+                    else -> "mic-error"
+                }
+                notifyJsSpeechError(reason)
+            }
+
+            override fun onResults(results: Bundle?) {
+                val list = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
+                val arr = JSONArray()
+                for (item in list) arr.put(item)
+                val escaped = JSONObject.quote(arr.toString())
+                runOnUiThread {
+                    webView.evaluateJavascript(
+                        "window.__onNativeSpeechResult && window.__onNativeSpeechResult($escaped);",
+                        null,
+                    )
+                }
+            }
+        })
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, bcp47)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, bcp47)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        }
+        runCatching { sr.startListening(intent) }.onFailure {
+            notifyJsSpeechError("start-failed")
+        }
+    }
+
+    private fun stopNativeSpeechInternal() {
+        speechRecognizer?.let { sr ->
+            runCatching { sr.cancel() }
+            runCatching { sr.destroy() }
+        }
+        speechRecognizer = null
+    }
+
+    private fun notifyJsSpeechError(reason: String) {
+        val safe = reason.replace("'", "")
+        runOnUiThread {
+            webView.evaluateJavascript(
+                "window.__onNativeSpeechError && window.__onNativeSpeechError('$safe');",
+                null,
+            )
+        }
+    }
+
+    private inner class LingoAndroidBridge {
+        @JavascriptInterface
+        fun setThemeMode(mode: String) {
+            runOnUiThread { applyNativeBars(mode) }
+        }
+
+        @JavascriptInterface
+        fun haptic(kind: String) {
+            runOnUiThread { performNativeHaptic(kind) }
+        }
+
+        @JavascriptInterface
+        fun startNativeSpeech(bcp47: String) {
+            runOnUiThread {
+                val hasMic = ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.RECORD_AUDIO,
+                ) == PackageManager.PERMISSION_GRANTED
+                if (hasMic) {
+                    launchNativeSpeechRecognizer(bcp47)
+                } else {
+                    pendingSpeechLang = bcp47
+                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun stopNativeSpeech() {
+            runOnUiThread { stopNativeSpeechInternal() }
         }
     }
 
@@ -276,6 +465,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        stopNativeSpeechInternal()
         webView.onPause()
     }
 
@@ -285,6 +475,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        stopNativeSpeechInternal()
         pendingWebPermission?.deny()
         webView.destroy()
         super.onDestroy()

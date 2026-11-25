@@ -384,6 +384,15 @@ class LingoAudioEngine {
    * Procedural Web Audio API Joyful Feedback Synthesizer (ZERO audio files, <3ms latency)
    */
   public playChime(kind: 'tap' | 'success' | 'celebrate' | 'gentle-nudge' | 'unlock', enabled = true): void {
+    // Trigger native Android tactile haptic feedback if running inside LingoNest APK
+    if (typeof window !== 'undefined') {
+      const bridge = (window as unknown as { AndroidBridge?: AndroidBridgeLike }).AndroidBridge;
+      try {
+        bridge?.haptic?.(kind);
+      } catch {
+        // ignore
+      }
+    }
     if (!enabled) return;
     const ctx = this.getAudioCtx();
     if (!ctx) return;
@@ -422,8 +431,12 @@ class LingoAudioEngine {
 
   public supportsSpeechRecognition(): boolean {
     if (typeof window === 'undefined') return false;
-    const w = window as unknown as Record<string, unknown>;
-    return Boolean(w.SpeechRecognition || w.webkitSpeechRecognition);
+    const w = window as unknown as {
+      SpeechRecognition?: unknown;
+      webkitSpeechRecognition?: unknown;
+      AndroidBridge?: AndroidBridgeLike;
+    };
+    return Boolean(w.AndroidBridge?.startNativeSpeech || w.SpeechRecognition || w.webkitSpeechRecognition);
   }
 
   public startListening(
@@ -437,6 +450,40 @@ class LingoAudioEngine {
       onError('unsupported');
       return;
     }
+
+    // Native Android SpeechRecognizer bridge (works inside LingoNest APK where WebView lacks webkitSpeechRecognition!)
+    const wNative = window as unknown as {
+      AndroidBridge?: AndroidBridgeLike;
+      __onNativeSpeechResult?: (json: string) => void;
+      __onNativeSpeechError?: (reason: string) => void;
+    };
+    if (wNative.AndroidBridge?.startNativeSpeech) {
+      let settled = false;
+      wNative.__onNativeSpeechResult = (json: string) => {
+        if (settled) return;
+        settled = true;
+        try {
+          const parsed = JSON.parse(json) as string[];
+          onResult(Array.isArray(parsed) ? parsed : []);
+        } catch {
+          onResult([]);
+        }
+        onEnd?.();
+      };
+      wNative.__onNativeSpeechError = (reason: string) => {
+        if (settled) return;
+        settled = true;
+        onError(reason || 'mic-error');
+        onEnd?.();
+      };
+      try {
+        wNative.AndroidBridge.startNativeSpeech(LANG_BCP47[lang][0]);
+        return;
+      } catch {
+        // fallback to Web Speech API
+      }
+    }
+
     const w = window as unknown as {
       SpeechRecognition?: new () => SpeechRecognitionLike;
       webkitSpeechRecognition?: new () => SpeechRecognitionLike;
@@ -486,6 +533,14 @@ class LingoAudioEngine {
   }
 
   public stopListening(): void {
+    if (typeof window !== 'undefined') {
+      const bridge = (window as unknown as { AndroidBridge?: AndroidBridgeLike }).AndroidBridge;
+      try {
+        bridge?.stopNativeSpeech?.();
+      } catch {
+        // ignore
+      }
+    }
     if (this.activeRecognition) {
       try {
         this.activeRecognition.abort();
@@ -495,6 +550,13 @@ class LingoAudioEngine {
       this.activeRecognition = null;
     }
   }
+}
+
+interface AndroidBridgeLike {
+  setThemeMode?: (mode: string) => void;
+  haptic?: (kind: string) => void;
+  startNativeSpeech?: (bcp47: string) => void;
+  stopNativeSpeech?: () => void;
 }
 
 interface SpeechRecognitionEventLike {
