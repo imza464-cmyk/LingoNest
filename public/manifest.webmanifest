@@ -1,0 +1,11 @@
+{
+  "name": "LingoNest — Doğal Dil Dünyası",
+  "short_name": "LingoNest",
+  "description": "5 yaşından yetişkine bilimsel, oyunlaştırılmış, sıfır-ceza doğal dil edinimi.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#14B8A6",
+  "orientation": "any",
+  "icons": []
+}
