@@ -101,6 +101,14 @@ export function WorldMapView({
       {/* Hero Banner */}
       {isMini ? (
         <div className="ln-hero-banner">
+          <div style={{ flex: '1 1 100%', marginBottom: '4px' }}>
+            <h1 style={{ fontSize: 'clamp(1.25rem, 2.2vw, 1.65rem)' }}>
+              LingoNest — {languageNameTr} Keşif Adaları
+            </h1>
+            <p style={{ margin: '4px 0 0', color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
+              5 yaşından yetişkine FSRS-5 hafıza ritmi ve 1.912 nöral ses ile doğal dil edinimi.
+            </p>
+          </div>
           <button
             type="button"
             className="ln-clay-btn ln-clay-btn--gold ln-touch-xl"

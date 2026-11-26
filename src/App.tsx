@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart3,
   BookOpen,
+  Cloud,
   Ear,
   Globe,
   Home,
@@ -56,6 +57,7 @@ import { AdultPracticeView } from './components/AdultPracticeView';
 import { AdultDialogueView } from './components/AdultDialogueView';
 import { ParentDashboardModal } from './components/ParentDashboardModal';
 import { OnboardingModal } from './components/OnboardingModal';
+import { CloudAccountModal } from './components/CloudAccountModal';
 
 const AGE_BADGE: Record<AgeMode, { emoji: string; label: string }> = {
   mini: { emoji: '🐣', label: 'Mini (4–7)' },
@@ -91,6 +93,7 @@ export function App() {
   );
   const [adultDueQueueIds, setAdultDueQueueIds] = useState<string[] | null>(null);
   const [showParentModal, setShowParentModal] = useState(false);
+  const [showCloudModal, setShowCloudModal] = useState(false);
 
   const switcherBackRef = useRef<(() => boolean) | null>(null);
   const viewSubBackRef = useRef<(() => boolean) | null>(null);
@@ -456,6 +459,9 @@ export function App() {
     <div
       className={`ln-shell ln-mode-${activeProfile.ageMode}${!isInFocusedSession ? ' has-mobile-nav' : ''}`}
     >
+      <a href="#mainContent" className="ln-skip-link">
+        İçeriğe geç
+      </a>
       {/* Age-Adaptive Top Navigation Bar */}
       <header className="ln-topbar">
         <button
@@ -632,6 +638,17 @@ export function App() {
 
           <button
             type="button"
+            className="ln-chip-btn"
+            onClick={() => setShowCloudModal(true)}
+            title="Bulut Senkronizasyon ve Aile Planları"
+            aria-label="Bulut Hesabı ve Planlar"
+          >
+            <Cloud size={16} />
+            <span className="ln-hide-mobile">Bulut</span>
+          </button>
+
+          <button
+            type="button"
             className="ln-parent-btn"
             onClick={() => setShowParentModal(true)}
             title="Profil, Yaş Modu ve FSRS-5 İstatistikleri"
@@ -665,7 +682,7 @@ export function App() {
         </div>
       )}
 
-      <main className="ln-main">
+      <main id="mainContent" className="ln-main">
         {/* MASTER (15+ ADULT) COGNITIVE STUDIO VIEWS */}
         {isMaster && view === 'worlds' && (
           <AdultStudioView
@@ -887,6 +904,14 @@ export function App() {
           onDeleteProfile={handleDeleteProfile}
           onImportVault={handleImportVault}
           onEraseAll={handleEraseAll}
+        />
+      )}
+
+      {showCloudModal && (
+        <CloudAccountModal
+          vault={vault}
+          onRestoreCloudVault={(nextVault) => setVault(nextVault)}
+          onClose={() => setShowCloudModal(false)}
         />
       )}
 
