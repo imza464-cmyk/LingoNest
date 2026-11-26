@@ -138,7 +138,8 @@ export interface StoryData {
 
 export interface PhoneticTrap {
   id: string;
-  symbol: string;        // "/θ/", "/ð/", "/æ/", "/w/", "/ŋ/", "/ə/"
+  lang?: LanguageCode;   // Defaults to 'en' when omitted; supports 'en' | 'de' | 'es'
+  symbol: string;        // "/θ/", "/ð/", "/æ/", "/w/", "/ŋ/", "/ə/", etc.
   titleTr: string;
   whyHardForTurkishTr: string;
   mouthCueTr: string;
@@ -182,8 +183,9 @@ export interface LearnerProfile {
   avatarEmoji: string;
   ageMode: AgeMode;
   targetLang: LanguageCode;
-  speechSlowMode: boolean; // true = 0.82x child-friendly clear cadence
+  speechSlowMode: boolean; // true = 0.80x child-friendly clear cadence
   soundFxEnabled: boolean;
+  dailyGoalMinutes?: number; // 5 (mini), 10 (explorer), 15 (master)
   cards: Record<string, FSRSCardState>; // key = `${lang}:${itemId}`
   completedStories: string[];
   phoneticScores: Record<string, number>; // trapId -> 0..100

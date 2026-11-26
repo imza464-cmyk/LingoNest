@@ -26,11 +26,13 @@ export interface AdultDialogueViewProps {
   profile: LearnerProfile;
   onCompleteDialogue: (dialogueId: string) => void;
   onBack: () => void;
+  onRegisterSubBack?: (fn: (() => boolean) | null) => void;
 }
 
 interface TurnSelectionRecord {
   optionIdx: number;
   option: AdultDialogueOption;
+  firstAttemptBest: boolean;
   spokenMatched: boolean;
   spokenScorePct: number | null;
   spokenHeard: string;
@@ -54,6 +56,7 @@ export function AdultDialogueView({
   profile,
   onCompleteDialogue,
   onBack,
+  onRegisterSubBack,
 }: AdultDialogueViewProps) {
   const [activeDialogueId, setActiveDialogueId] = useState<string | null>(null);
   const [turnIndex, setTurnIndex] = useState(0);
@@ -66,21 +69,44 @@ export function AdultDialogueView({
   const [dialogueFinished, setDialogueFinished] = useState(false);
 
   const completedNotifiedRef = useRef(false);
+  const micCancelledRef = useRef(false);
 
   const activeDialogue = useMemo(
     () => dialogues.find((d) => d.id === activeDialogueId) ?? null,
     [dialogues, activeDialogueId],
   );
 
+  // Register Android hardware back sub-handler when inside an active scenario (P0-2)
+  useEffect(() => {
+    if (!onRegisterSubBack) return undefined;
+    if (activeDialogueId !== null) {
+      onRegisterSubBack(() => {
+        micCancelledRef.current = true;
+        audioEngine.stopSpeaking();
+        audioEngine.stopListening();
+        setSpeakState('idle');
+        setActiveDialogueId(null);
+        return true;
+      });
+    } else {
+      onRegisterSubBack(null);
+    }
+    return () => {
+      onRegisterSubBack(null);
+    };
+  }, [activeDialogueId, onRegisterSubBack]);
+
   // Cleanup audio when leaving view or switching scenarios
   useEffect(() => {
     return () => {
+      micCancelledRef.current = true;
       audioEngine.stopSpeaking();
       audioEngine.stopListening();
     };
   }, []);
 
   const startScenario = (dialogue: AdultDialogue) => {
+    micCancelledRef.current = true;
     audioEngine.stopSpeaking();
     audioEngine.stopListening();
     audioEngine.playChime('tap', profile.soundFxEnabled);
@@ -123,6 +149,7 @@ export function AdultDialogueView({
     option: AdultDialogueOption,
   ) => {
     const line = option.text[profile.targetLang];
+    micCancelledRef.current = true;
     audioEngine.stopListening();
     setSpeakState('idle');
     audioEngine.playChime(
@@ -131,16 +158,20 @@ export function AdultDialogueView({
     );
     audioEngine.speak(line, profile.targetLang, { slow: false, role: 'adult' });
 
-    setSelections((prev) => ({
-      ...prev,
-      [tIdx]: {
-        optionIdx: optIdx,
-        option,
-        spokenMatched: prev[tIdx]?.optionIdx === optIdx ? prev[tIdx].spokenMatched : false,
-        spokenScorePct: prev[tIdx]?.optionIdx === optIdx ? prev[tIdx].spokenScorePct : null,
-        spokenHeard: prev[tIdx]?.optionIdx === optIdx ? prev[tIdx].spokenHeard : '',
-      },
-    }));
+    setSelections((prev) => {
+      const existing = prev[tIdx];
+      return {
+        ...prev,
+        [tIdx]: {
+          optionIdx: optIdx,
+          option,
+          firstAttemptBest: existing ? existing.firstAttemptBest : option.isBest,
+          spokenMatched: existing?.optionIdx === optIdx ? existing.spokenMatched : false,
+          spokenScorePct: existing?.optionIdx === optIdx ? existing.spokenScorePct : null,
+          spokenHeard: existing?.optionIdx === optIdx ? existing.spokenHeard : '',
+        },
+      };
+    });
   };
 
   const handlePracticeSpeakLine = (tIdx: number, lineToSpeak: string) => {
@@ -150,17 +181,20 @@ export function AdultDialogueView({
     }
 
     if (speakState === 'listening') {
+      micCancelledRef.current = true;
       audioEngine.stopListening();
       setSpeakState('idle');
       return;
     }
 
+    micCancelledRef.current = false;
     audioEngine.stopSpeaking();
     setSpeakState('listening');
 
     audioEngine.startListening(
       profile.targetLang,
       (alts) => {
+        if (micCancelledRef.current) return;
         const res = matchSpokenAttempt(lineToSpeak, lineToSpeak, alts, false);
         const pct = Math.round(res.score * 100);
         setSpeakState(res.matched ? 'matched' : 'retry');
@@ -183,7 +217,16 @@ export function AdultDialogueView({
         });
       },
       (reason) => {
-        setSpeakState(reason === 'unsupported' ? 'unsupported' : 'retry');
+        if (
+          micCancelledRef.current ||
+          reason === 'aborted' ||
+          reason === 'canceled' ||
+          reason === 'cancelled'
+        ) {
+          setSpeakState('idle');
+          return;
+        }
+        setSpeakState(reason === 'unsupported' || reason === 'not-allowed' ? 'unsupported' : 'retry');
       },
       () => {
         setSpeakState((prev) => (prev === 'listening' ? 'idle' : prev));
@@ -193,6 +236,7 @@ export function AdultDialogueView({
 
   const handleAdvanceTurn = () => {
     if (!activeDialogue) return;
+    micCancelledRef.current = true;
     audioEngine.stopSpeaking();
     audioEngine.stopListening();
     setSpeakState('idle');
@@ -289,7 +333,7 @@ export function AdultDialogueView({
     : activeDialogue.turns.slice(0, turnIndex + 1);
 
   const learnerTurnsCount = activeDialogue.turns.filter((t) => t.speaker === 'learner').length;
-  const bestSelectedCount = Object.values(selections).filter((s) => s.option.isBest).length;
+  const bestSelectedCount = Object.values(selections).filter((s) => s.firstAttemptBest).length;
   const spokenLinesCount = Object.values(selections).filter((s) => s.spokenMatched).length;
 
   const activeSelection = selections[turnIndex];
@@ -305,8 +349,10 @@ export function AdultDialogueView({
           type="button"
           className="ln-adult-btn ln-adult-btn--ghost"
           onClick={() => {
+            micCancelledRef.current = true;
             audioEngine.stopSpeaking();
             audioEngine.stopListening();
+            setSpeakState('idle');
             setActiveDialogueId(null);
           }}
         >
@@ -379,20 +425,37 @@ export function AdultDialogueView({
                 <div className="ln-adult-chat-meta">
                   <strong>{turn.roleTr}</strong>
                   {(isPartner || selectedRec || !turn.options?.length) && (
-                    <button
-                      type="button"
-                      className="ln-adult-icon-link"
-                      onClick={() =>
-                        audioEngine.speak(displayLine, profile.targetLang, {
-                          slow: false,
-                          role: isPartner ? 'partner' : 'adult',
-                        })
-                      }
-                      aria-label="Satırı sesli dinle"
-                    >
-                      <Volume2 size={14} aria-hidden="true" />
-                      <span>Dinle</span>
-                    </button>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="ln-adult-icon-link"
+                        onClick={() =>
+                          audioEngine.speak(displayLine, profile.targetLang, {
+                            slow: false,
+                            role: isPartner ? 'partner' : 'adult',
+                          })
+                        }
+                        aria-label="Satırı sesli dinle"
+                      >
+                        <Volume2 size={14} aria-hidden="true" />
+                        <span>Dinle</span>
+                      </button>
+                      {isPartner && (
+                        <button
+                          type="button"
+                          className="ln-adult-icon-link"
+                          onClick={() =>
+                            audioEngine.speak(displayLine, profile.targetLang, {
+                              slow: true,
+                              role: 'partner',
+                            })
+                          }
+                          aria-label="Satırı 0.80x yavaş hızda dinle"
+                        >
+                          <span>🐢 0.80x</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -566,7 +629,13 @@ export function AdultDialogueView({
             <button
               type="button"
               className="ln-adult-btn ln-adult-btn--primary"
-              onClick={() => setActiveDialogueId(null)}
+              onClick={() => {
+                micCancelledRef.current = true;
+                audioEngine.stopSpeaking();
+                audioEngine.stopListening();
+                setSpeakState('idle');
+                setActiveDialogueId(null);
+              }}
             >
               <ArrowLeft size={15} aria-hidden="true" />
               <span>Diğer Senaryolara Dön</span>

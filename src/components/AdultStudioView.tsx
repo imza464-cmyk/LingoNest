@@ -29,6 +29,7 @@ export interface AdultStudioViewProps {
   profile: LearnerProfile;
   languageNameTr: string;
   onStartModule: (moduleId: string) => void;
+  onStartDueQueue?: () => void;
   onOpenDialogues: () => void;
   onOpenPhonetics: () => void;
   onOpenParentStats: () => void;
@@ -48,6 +49,7 @@ export function AdultStudioView({
   profile,
   languageNameTr,
   onStartModule,
+  onStartDueQueue,
   onOpenDialogues,
   onOpenPhonetics,
   onOpenParentStats,
@@ -134,6 +136,11 @@ export function AdultStudioView({
   }, [sortedModules, dialogues, profile.cards, profile.completedStories, profile.targetLang]);
 
   const handleLaunchDailyFsrs = () => {
+    if (telemetry.totalDue > 0 && onStartDueQueue) {
+      audioEngine.playChime('tap', profile.soundFxEnabled);
+      onStartDueQueue();
+      return;
+    }
     if (!telemetry.recommendedModuleId) return;
     audioEngine.playChime('tap', profile.soundFxEnabled);
     onStartModule(telemetry.recommendedModuleId);
@@ -165,7 +172,7 @@ export function AdultStudioView({
               type="button"
               className="ln-adult-btn ln-adult-btn--primary"
               onClick={handleLaunchDailyFsrs}
-              disabled={!telemetry.recommendedModuleId}
+              disabled={!telemetry.recommendedModuleId && !(telemetry.totalDue > 0 && onStartDueQueue)}
             >
               <Play size={16} aria-hidden="true" />
               <span>FSRS Günlük Tekrarı Başlat</span>
@@ -350,7 +357,7 @@ export function AdultStudioView({
             <Ear size={20} aria-hidden="true" />
           </span>
           <div className="ln-adult-tool-text">
-            <strong>Türkçe→İngilizce Kontrastif Ses Labı</strong>
+            <strong>Türkçe → {languageNameTr} Kontrastif Ses Labı</strong>
             <small>/θ/ /ð/ /æ/ /w/ /ŋ/ /ə/ minimal çiftler &amp; telaffuz</small>
           </div>
           <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />

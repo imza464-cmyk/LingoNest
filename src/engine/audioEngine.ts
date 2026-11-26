@@ -75,8 +75,10 @@ class LingoAudioEngine {
   private manifest: AudioManifest | null = null;
   private manifestPromise: Promise<AudioManifest | null> | null = null;
   private activeAudio: HTMLAudioElement | null = null;
+  private activeAudioResolve: ((ok: boolean) => void) | null = null;
   private blobCache = new Map<string, string>();
   private sequenceToken = 0;
+  private userCancelledMic = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -87,6 +89,11 @@ class LingoAudioEngine {
         load();
         window.speechSynthesis.onvoiceschanged = load;
       }
+      // Allow Android onPause() to cleanly halt audio & mic when app enters background
+      (window as unknown as { __lingonestPauseAudio?: () => void }).__lingonestPauseAudio = () => {
+        this.stopSpeaking();
+        this.stopListening();
+      };
       void this.ensureManifest();
     }
   }
@@ -231,9 +238,13 @@ class LingoAudioEngine {
           if (this.activeAudio === el) {
             this.activeAudio = null;
           }
+          if (this.activeAudioResolve === finish) {
+            this.activeAudioResolve = null;
+          }
           opts?.onEnd?.();
           resolve(ok);
         };
+        this.activeAudioResolve = finish;
 
         el.onplay = () => opts?.onStart?.();
         el.onended = () => finish(true);
@@ -375,6 +386,11 @@ class LingoAudioEngine {
       }
       this.activeAudio = null;
     }
+    if (this.activeAudioResolve) {
+      const resolvePending = this.activeAudioResolve;
+      this.activeAudioResolve = null;
+      resolvePending(false);
+    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -446,6 +462,7 @@ class LingoAudioEngine {
     onEnd?: () => void,
   ): void {
     this.stopListening();
+    this.userCancelledMic = false;
     if (typeof window === 'undefined') {
       onError('unsupported');
       return;
@@ -462,6 +479,10 @@ class LingoAudioEngine {
       wNative.__onNativeSpeechResult = (json: string) => {
         if (settled) return;
         settled = true;
+        if (this.userCancelledMic) {
+          onEnd?.();
+          return;
+        }
         try {
           const parsed = JSON.parse(json) as string[];
           onResult(Array.isArray(parsed) ? parsed : []);
@@ -473,6 +494,10 @@ class LingoAudioEngine {
       wNative.__onNativeSpeechError = (reason: string) => {
         if (settled) return;
         settled = true;
+        if (this.userCancelledMic || reason === 'aborted') {
+          onEnd?.();
+          return;
+        }
         onError(reason || 'mic-error');
         onEnd?.();
       };
@@ -517,6 +542,9 @@ class LingoAudioEngine {
       rec.onerror = (ev: { error?: string }) => {
         if (!settled) {
           settled = true;
+          if (this.userCancelledMic || ev.error === 'aborted') {
+            return;
+          }
           onError(ev.error || 'mic-error');
         }
       };
@@ -533,6 +561,7 @@ class LingoAudioEngine {
   }
 
   public stopListening(): void {
+    this.userCancelledMic = true;
     if (typeof window !== 'undefined') {
       const bridge = (window as unknown as { AndroidBridge?: AndroidBridgeLike }).AndroidBridge;
       try {
@@ -557,6 +586,7 @@ interface AndroidBridgeLike {
   haptic?: (kind: string) => void;
   startNativeSpeech?: (bcp47: string) => void;
   stopNativeSpeech?: () => void;
+  shareJsonBackup?: (filename: string, jsonContent: string) => void;
 }
 
 interface SpeechRecognitionEventLike {

@@ -2,6 +2,8 @@ package com.lingonest.app
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,7 +24,6 @@ import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -36,11 +37,14 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -54,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private var pendingWebPermission: PermissionRequest? = null
     private var pendingSpeechLang: String? = null
     private var speechRecognizer: SpeechRecognizer? = null
+    private var triedCacheFallback = false
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -78,8 +83,6 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        applyNativeBars("mini")
 
         rootView = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#EEF8FF"))
@@ -87,6 +90,18 @@ class MainActivity : ComponentActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT,
             )
+        }
+
+        // Fixes P0-1: Android 15 (targetSdk 35) mandatory Edge-to-Edge WindowInsets padding
+        // Guarantees status bar, camera cutout, gesture bar, and IME keyboard NEVER overlap UI!
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.ime(),
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            windowInsets
         }
 
         webView = WebView(this).apply {
@@ -108,11 +123,12 @@ class MainActivity : ComponentActivity() {
         rootView.addView(splashOverlay)
         rootView.addView(offlineOverlay)
         setContentView(rootView)
+        applyNativeBars("mini")
 
         configureWebView()
         loadLingoNest()
 
-        // Native Back button cooperates with LingoNest in-app navigation (closes modals/lessons cleanly!)
+        // Native Back button cooperates with LingoNest in-app & nested sub-view navigation
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
@@ -209,6 +225,13 @@ class MainActivity : ComponentActivity() {
             ) {
                 super.onReceivedError(view, request, error)
                 if (request.isForMainFrame) {
+                    // Fixes P0-4: On flaky Wi-Fi/captive portal, try cached offline bundle before showing error!
+                    if (!triedCacheFallback) {
+                        triedCacheFallback = true
+                        view.settings.cacheMode = WebSettings.LOAD_CACHE_ONLY
+                        view.loadUrl(LIVE_URL)
+                        return
+                    }
                     splashOverlay.visibility = View.GONE
                     offlineOverlay.visibility = View.VISIBLE
                 }
@@ -239,9 +262,7 @@ class MainActivity : ComponentActivity() {
         if (!::webView.isInitialized) return
         when (kind) {
             "tap" -> webView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-            "success", "celebrate", "unlock" -> {
-                vibrateShort(if (kind == "celebrate") 38L else 22L)
-            }
+            "success", "celebrate", "unlock" -> vibrateShort(if (kind == "celebrate") 38L else 22L)
             "gentle-nudge" -> vibrateShort(14L)
         }
     }
@@ -266,7 +287,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launchNativeSpeechRecognizer(bcp47: String) {
-        stopNativeSpeechInternal()
+        stopNativeSpeechInternal(notifyAborted = false)
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             notifyJsSpeechError("unsupported")
             return
@@ -318,12 +339,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun stopNativeSpeechInternal() {
+    private fun stopNativeSpeechInternal(notifyAborted: Boolean) {
+        val hadActive = speechRecognizer != null
         speechRecognizer?.let { sr ->
             runCatching { sr.cancel() }
             runCatching { sr.destroy() }
         }
         speechRecognizer = null
+        if (hadActive && notifyAborted) {
+            notifyJsSpeechError("aborted")
+        }
     }
 
     private fun notifyJsSpeechError(reason: String) {
@@ -333,6 +358,21 @@ class MainActivity : ComponentActivity() {
                 "window.__onNativeSpeechError && window.__onNativeSpeechError('$safe');",
                 null,
             )
+        }
+    }
+
+    private fun shareJsonBackupNative(filename: String, jsonContent: String) {
+        runCatching {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            cm?.setPrimaryClip(ClipData.newPlainText(filename, jsonContent))
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, filename)
+                putExtra(Intent.EXTRA_TEXT, jsonContent)
+            }
+            startActivity(Intent.createChooser(send, "LingoNest Yedeğini Kaydet / Paylaş"))
+        }.onFailure {
+            Toast.makeText(this, "Yedek panoya kopyalandı.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -365,11 +405,17 @@ class MainActivity : ComponentActivity() {
 
         @JavascriptInterface
         fun stopNativeSpeech() {
-            runOnUiThread { stopNativeSpeechInternal() }
+            runOnUiThread { stopNativeSpeechInternal(notifyAborted = false) }
+        }
+
+        @JavascriptInterface
+        fun shareJsonBackup(filename: String, jsonContent: String) {
+            runOnUiThread { shareJsonBackupNative(filename, jsonContent) }
         }
     }
 
     private fun loadLingoNest() {
+        triedCacheFallback = false
         offlineOverlay.visibility = View.GONE
         splashOverlay.alpha = 1f
         splashOverlay.visibility = View.VISIBLE
@@ -410,7 +456,7 @@ class MainActivity : ComponentActivity() {
             setPadding(0, 16, 0, 8)
         }
         val sub = TextView(this).apply {
-            text = "Doğal Dil Dünyası • 1.912 Stüdyo Nöral Ses"
+            text = "Doğal Dil Dünyası • Stüdyo Nöral Sesler"
             textSize = 14f
             setTextColor(Color.parseColor("#38BDF8"))
             gravity = Gravity.CENTER
@@ -444,7 +490,7 @@ class MainActivity : ComponentActivity() {
             setPadding(0, 0, 0, 14)
         }
         val desc = TextView(this).apply {
-            text = "LingoNest ilk açılışta canlı ses paketini yükler. Bağlantınızı kontrol edip tekrar deneyin."
+            text = "İlk kurulumda sesleri indirmek için bağlantı gerekir; çalınan sesler çevrimdışı önbelleğe alınır."
             textSize = 14f
             setTextColor(Color.parseColor("#94A3B8"))
             gravity = Gravity.CENTER
@@ -465,17 +511,25 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        stopNativeSpeechInternal()
-        webView.onPause()
+        stopNativeSpeechInternal(notifyAborted = true)
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(
+                "window.__lingonestPauseAudio && window.__lingonestPauseAudio();",
+                null,
+            )
+            webView.onPause()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        webView.onResume()
+        if (::webView.isInitialized) {
+            webView.onResume()
+        }
     }
 
     override fun onDestroy() {
-        stopNativeSpeechInternal()
+        stopNativeSpeechInternal(notifyAborted = false)
         pendingWebPermission?.deny()
         webView.destroy()
         super.onDestroy()

@@ -44,12 +44,16 @@ describe('LingoNest Curriculum Data Integrity', () => {
     }
   });
 
-  it('covers all 6 Turkish L1 phonetic traps with 3 minimal pairs each', () => {
-    expect(PHONETIC_TRAPS).toHaveLength(6);
+  it('covers 14 multilingual Turkish-L1 phonetic traps (6 EN + 4 DE + 4 ES) with 3 minimal pairs each', () => {
+    expect(PHONETIC_TRAPS).toHaveLength(14);
+    const byLang = { en: 0, de: 0, es: 0 };
     for (const trap of PHONETIC_TRAPS) {
+      const lang = trap.lang ?? 'en';
+      byLang[lang] += 1;
       expect(trap.minimalPairs).toHaveLength(3);
       expect(trap.mouthCueTr.length).toBeGreaterThan(5);
     }
+    expect(byLang).toEqual({ en: 6, de: 4, es: 4 });
   });
 
   it('contains 6 adult modules x 10 trilingual phrases + 6 roleplay dialogues with valid cloze & traps', () => {

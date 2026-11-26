@@ -24,6 +24,14 @@ export interface PhoneticLabViewProps {
 type EarSecret = 'target' | 'contrast';
 type SpeakState = 'idle' | 'listening' | 'matched' | 'retry' | 'unsupported';
 
+const TARGET_LANG_LABEL_TR: Record<LearnerProfile['targetLang'], string> = {
+  en: 'İngilizce',
+  de: 'Almanca',
+  es: 'İspanyolca',
+};
+
+const pickRandomEarSecret = (): EarSecret => (Math.random() < 0.5 ? 'target' : 'contrast');
+
 export function PhoneticLabView({
   traps,
   profile,
@@ -31,12 +39,17 @@ export function PhoneticLabView({
   onBack,
 }: PhoneticLabViewProps) {
   const isMini = profile.ageMode === 'mini';
-  const [selectedTrapId, setSelectedTrapId] = useState<string>(traps[0]?.id ?? '');
+  const filteredTraps = useMemo(() => {
+    const matches = traps.filter((t) => (t.lang ?? 'en') === profile.targetLang);
+    return matches.length > 0 ? matches : traps;
+  }, [traps, profile.targetLang]);
+
+  const [selectedTrapId, setSelectedTrapId] = useState<string>(filteredTraps[0]?.id ?? '');
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Ear-discrimination ("Hangisini Duydun?") state
   const [pairIdx, setPairIdx] = useState(0);
-  const [earSecret, setEarSecret] = useState<EarSecret>('target');
+  const [earSecret, setEarSecret] = useState<EarSecret>(pickRandomEarSecret);
   const [earStatus, setEarStatus] = useState<'ready' | 'correct' | 'nudge'>('ready');
   const [wigglingSide, setWigglingSide] = useState<EarSecret | null>(null);
   const [earStreak, setEarStreak] = useState(0);
@@ -63,9 +76,24 @@ export function PhoneticLabView({
     };
   }, []);
 
+  useEffect(() => {
+    clearTimer();
+    audioEngine.stopSpeaking();
+    audioEngine.stopListening();
+    setSelectedTrapId(filteredTraps[0]?.id ?? '');
+    setPairIdx(0);
+    setEarSecret(pickRandomEarSecret());
+    setEarStatus('ready');
+    setWigglingSide(null);
+    setEarStreak(0);
+    setSpeakState('idle');
+    setLastHeard('');
+    setLastScorePct(null);
+  }, [profile.targetLang, filteredTraps]);
+
   const selectedTrap = useMemo(
-    () => traps.find((t) => t.id === selectedTrapId) ?? traps[0] ?? null,
-    [traps, selectedTrapId],
+    () => filteredTraps.find((t) => t.id === selectedTrapId) ?? filteredTraps[0] ?? null,
+    [filteredTraps, selectedTrapId],
   );
 
   const currentPair = useMemo(() => {
@@ -73,9 +101,8 @@ export function PhoneticLabView({
     return selectedTrap.minimalPairs[pairIdx % selectedTrap.minimalPairs.length];
   }, [pairIdx, selectedTrap]);
 
-  // Notice: These 6 L1 contrast traps specifically target English phonemes (/θ/ /ð/ /æ/ /w/ /ŋ/ /ə/)
-  const speakEnglish = (text: string, slow = false) => {
-    audioEngine.speak(text, 'en', {
+  const speakTarget = (text: string, slow = false) => {
+    audioEngine.speak(text, profile.targetLang, {
       slow: slow || profile.speechSlowMode,
       childPitch: isMini,
       onStart: () => setIsSpeaking(true),
@@ -85,7 +112,7 @@ export function PhoneticLabView({
 
   const startNextEarRound = (nextIdx: number) => {
     setPairIdx(nextIdx);
-    const nextSecret: EarSecret = Math.random() < 0.5 ? 'target' : 'contrast';
+    const nextSecret = pickRandomEarSecret();
     setEarSecret(nextSecret);
     setEarStatus('ready');
     setWigglingSide(null);
@@ -95,7 +122,7 @@ export function PhoneticLabView({
         selectedTrap.minimalPairs[nextIdx % selectedTrap.minimalPairs.length];
       const wordToPlay =
         nextSecret === 'target' ? nextPair.targetWord : nextPair.contrastWord;
-      speakEnglish(wordToPlay, false);
+      speakTarget(wordToPlay, false);
     }
   };
 
@@ -106,7 +133,7 @@ export function PhoneticLabView({
     audioEngine.playChime('tap', profile.soundFxEnabled);
     setSelectedTrapId(trap.id);
     setPairIdx(0);
-    setEarSecret('target');
+    setEarSecret(pickRandomEarSecret());
     setEarStatus('ready');
     setWigglingSide(null);
     setEarStreak(0);
@@ -118,7 +145,7 @@ export function PhoneticLabView({
   const handlePlayEarSecret = (slow = false) => {
     if (!currentPair) return;
     const word = earSecret === 'target' ? currentPair.targetWord : currentPair.contrastWord;
-    speakEnglish(word, slow);
+    speakTarget(word, slow);
   };
 
   const handlePickEarChoice = (picked: EarSecret) => {
@@ -165,7 +192,7 @@ export function PhoneticLabView({
     setSpeakState('listening');
 
     audioEngine.startListening(
-      'en',
+      profile.targetLang,
       (transcripts) => {
         const res = matchSpokenAttempt(
           selectedTrap.practiceSentence,
@@ -185,7 +212,7 @@ export function PhoneticLabView({
         } else {
           audioEngine.playChime('gentle-nudge', profile.soundFxEnabled);
           setSpeakState('retry');
-          speakEnglish(currentPair.targetWord, true);
+          speakTarget(currentPair.targetWord, true);
         }
       },
       (reason) => {
@@ -211,6 +238,7 @@ export function PhoneticLabView({
   }
 
   const savedScore = profile.phoneticScores[selectedTrap.id] ?? 0;
+  const targetLangLabel = TARGET_LANG_LABEL_TR[profile.targetLang] ?? 'İngilizce';
 
   return (
     <section className="ln-phonetic-lab">
@@ -235,10 +263,10 @@ export function PhoneticLabView({
           <div>
             <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.55rem' }}>
               <Ear size={24} />
-              <span>Türkçe → İngilizce Ses Laboratuvarı</span>
+              <span>Türkçe → {targetLangLabel} Ses Laboratuvarı</span>
             </h1>
             <p style={{ margin: '4px 0 0', color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
-              Türkçede olmayan 6 kritik sesi dudak-dil rehberi ve ikili kulak eğitimiyle keşfet.
+              Türkçede zorlayıcı {filteredTraps.length} kritik sesi dudak-dil rehberi ve ikili kulak eğitimiyle keşfet.
             </p>
           </div>
         </div>
@@ -268,9 +296,9 @@ export function PhoneticLabView({
         </div>
       </div>
 
-      {/* 6 Phonetic Trap Selector Pills */}
+      {/* Phonetic Trap Selector Pills */}
       <div className="ln-trap-pills" role="tablist" aria-label="Fonetik Ses Tuzakları">
-        {traps.map((trap) => {
+        {filteredTraps.map((trap) => {
           const active = trap.id === selectedTrap.id;
           const score = profile.phoneticScores[trap.id] ?? 0;
 
@@ -371,7 +399,7 @@ export function PhoneticLabView({
                         type="button"
                         className="ln-clay-btn"
                         style={{ minHeight: '44px', padding: '8px 14px', fontSize: '0.92rem' }}
-                        onClick={() => speakEnglish(pair.targetWord, false)}
+                        onClick={() => speakTarget(pair.targetWord, false)}
                       >
                         <Volume2 size={16} />
                         <span>Dinle</span>
@@ -380,8 +408,8 @@ export function PhoneticLabView({
                         type="button"
                         className="ln-clay-btn ln-clay-btn--gold"
                         style={{ minHeight: '44px', padding: '8px 12px', fontSize: '0.92rem' }}
-                        onClick={() => speakEnglish(pair.targetWord, true)}
-                        title="0.78x Yavaş Dinle"
+                        onClick={() => speakTarget(pair.targetWord, true)}
+                        title="0.80x Yavaş Dinle"
                       >
                         🐢
                       </button>
@@ -420,7 +448,7 @@ export function PhoneticLabView({
                         type="button"
                         className="ln-clay-btn ln-clay-btn--soft"
                         style={{ minHeight: '44px', padding: '8px 14px', fontSize: '0.92rem' }}
-                        onClick={() => speakEnglish(pair.contrastWord, false)}
+                        onClick={() => speakTarget(pair.contrastWord, false)}
                       >
                         <Volume2 size={16} />
                         <span>Dinle</span>
@@ -429,8 +457,8 @@ export function PhoneticLabView({
                         type="button"
                         className="ln-clay-btn ln-clay-btn--gold"
                         style={{ minHeight: '44px', padding: '8px 12px', fontSize: '0.92rem' }}
-                        onClick={() => speakEnglish(pair.contrastWord, true)}
-                        title="0.78x Yavaş Dinle"
+                        onClick={() => speakTarget(pair.contrastWord, true)}
+                        title="0.80x Yavaş Dinle"
                       >
                         🐢
                       </button>
@@ -475,6 +503,7 @@ export function PhoneticLabView({
                 type="button"
                 className="ln-clay-btn ln-clay-btn--gold"
                 onClick={() => handlePlayEarSecret(true)}
+                title="0.80x Yavaş Dinle"
               >
                 🐢 <span>Yavaş</span>
               </button>
@@ -568,7 +597,7 @@ export function PhoneticLabView({
           <button
             type="button"
             className="ln-clay-btn ln-clay-btn--soft"
-            onClick={() => speakEnglish(selectedTrap.practiceSentence, false)}
+            onClick={() => speakTarget(selectedTrap.practiceSentence, false)}
           >
             <Volume2 size={18} />
             <span>Cümleyi Dinle</span>
@@ -576,10 +605,21 @@ export function PhoneticLabView({
           <button
             type="button"
             className="ln-clay-btn ln-clay-btn--gold"
-            onClick={() => speakEnglish(selectedTrap.practiceSentence, true)}
+            onClick={() => speakTarget(selectedTrap.practiceSentence, true)}
+            title="0.80x Yavaş Dinle"
           >
             🐢 <span>Yavaş</span>
           </button>
+          {currentPair && (
+            <button
+              type="button"
+              className="ln-clay-btn"
+              onClick={() => speakTarget(currentPair.targetWord, false)}
+            >
+              <Volume2 size={18} />
+              <span>Hedef: {currentPair.targetWord}</span>
+            </button>
+          )}
         </div>
 
         <button

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   Check,
   Clock,
@@ -16,9 +16,10 @@ import {
   Volume2,
   X,
 } from 'lucide-react';
-import type { AgeMode, LanguageCode, LearnerProfile, WorldData } from '../types';
+import type { AdultModule, AgeMode, LanguageCode, LearnerProfile, WorldData } from '../types';
 import type { VaultState } from '../engine/storage';
-import { exportVaultJson, todayDateKey } from '../engine/storage';
+import { exportVaultJson, importVaultJson, todayDateKey } from '../engine/storage';
+import { PHONETIC_TRAPS } from '../data/curriculum';
 import {
   MS_PER_DAY,
   computeItemMasteryPct,
@@ -33,10 +34,14 @@ export interface ParentDashboardModalProps {
   vault: VaultState;
   activeProfile: LearnerProfile;
   worlds: WorldData[];
+  adultModules?: AdultModule[];
   onClose: () => void;
   onUpdateProfile: (updated: LearnerProfile) => void;
+  onChangeAgeMode?: (mode: AgeMode) => void;
   onSwitchProfile: (profileId: string) => void;
   onCreateProfile: (name: string, avatar: string, ageMode: AgeMode, lang: LanguageCode) => void;
+  onDeleteProfile?: (profileId: string) => void;
+  onImportVault?: (restored: VaultState) => void;
   onEraseAll: () => void;
 }
 
@@ -67,6 +72,47 @@ const LANG_LABELS: Record<LanguageCode, string> = {
   es: '🇪🇸 İspanyolca (ES)',
 };
 
+const PHONETIC_LABEL_MAP: Record<string, string> = {
+  trap_theta: '/θ/ · Peltek "th" (Titreşimsiz)',
+  trap_eth: '/ð/ · Peltek "th" (Titreşimli)',
+  trap_ash: '/æ/ · Geniş Ön "a/e"',
+  trap_w: '/w/ · Yuvarlak Dudaklı "w"',
+  trap_eng: '/ŋ/ · Genizsi "-ng"',
+  trap_schwa: '/ə/ · Gevşek Schwa',
+  trap_de_w_v: 'DE w/v · Dudak-Diş Ayrımı (/v/ vs /f/)',
+  trap_de_ch: 'DE ch · Ich-Laut & Ach-Laut (/ç/ /x/)',
+  trap_de_r: 'DE r · Küçük Dil "r" (/ʁ/)',
+  trap_de_umlaut: 'DE ü/ö/ä · Gergin Umlaut Ünlüleri',
+  trap_de_ei_ie: 'DE ei/ie · İkili Ünlü Ayrımı',
+  trap_de_sp_st: 'DE sp/st · Başlangıç "şp/şt" Sesi',
+  trap_es_rr: 'ES rr · Çift Vuruşlu Titrek "rr" (/r/)',
+  trap_es_j: 'ES j/g · Gırtlak Sürtünmeli (/x/)',
+  trap_es_ll: 'ES ll/y · Yumuşak Palatal (/ʝ/)',
+  trap_es_b_v: 'ES b/v · Çift Dudak Sürtünmesi (/β/)',
+  trap_es_ce_ci: 'ES c/z · Peltek "ce/ci/za" (/θ/)',
+  trap_es_n_tilde: 'ES ñ · Genizsi "ny" (/ɲ/)',
+};
+
+function formatPhoneticTrapLabel(trapId: string): string {
+  const fromCatalog = PHONETIC_TRAPS.find((t) => t.id === trapId);
+  if (fromCatalog) {
+    const langPrefix =
+      fromCatalog.lang && fromCatalog.lang !== 'en'
+        ? `${fromCatalog.lang.toUpperCase()} `
+        : '';
+    return `${langPrefix}${fromCatalog.symbol} · ${fromCatalog.titleTr}`;
+  }
+  if (PHONETIC_LABEL_MAP[trapId]) {
+    return PHONETIC_LABEL_MAP[trapId];
+  }
+  const cleaned = trapId.replace(/^trap_/, '');
+  const parts = cleaned.split('_').filter(Boolean);
+  if (parts.length >= 2 && (parts[0] === 'de' || parts[0] === 'es' || parts[0] === 'en')) {
+    return `${parts[0].toUpperCase()} ${parts.slice(1).join('/')}`;
+  }
+  return parts.join('/') || trapId;
+}
+
 function createGateChallenge(): { prompt: string; answer: number } {
   const a = TURKISH_NUM_WORDS[Math.floor(Math.random() * TURKISH_NUM_WORDS.length)];
   const b = TURKISH_NUM_WORDS[Math.floor(Math.random() * TURKISH_NUM_WORDS.length)];
@@ -96,10 +142,14 @@ export function ParentDashboardModal({
   vault,
   activeProfile,
   worlds,
+  adultModules,
   onClose,
   onUpdateProfile,
+  onChangeAgeMode,
   onSwitchProfile,
   onCreateProfile,
+  onDeleteProfile,
+  onImportVault,
   onEraseAll,
 }: ParentDashboardModalProps) {
   const uid = useId().replace(/:/g, '');
@@ -107,7 +157,12 @@ export function ParentDashboardModal({
   const [gate, setGate] = useState(() => createGateChallenge());
   const [gateInput, setGateInput] = useState('');
   const [gateError, setGateError] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(() => activeProfile.ageMode === 'master');
+
+  const [renameDraft, setRenameDraft] = useState(activeProfile.name);
+  const [confirmDeleteProfile, setConfirmDeleteProfile] = useState(false);
+  const [restoreFeedback, setRestoreFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [newName, setNewName] = useState('');
   const [newAvatar, setNewAvatar] = useState<string>('🦊');
@@ -117,6 +172,21 @@ export function ParentDashboardModal({
   const [neuralClipCount, setNeuralClipCount] = useState<number>(() =>
     audioEngine.getNeuralClipCount(),
   );
+
+  useEffect(() => {
+    setRenameDraft(activeProfile.name);
+    setConfirmDeleteProfile(false);
+  }, [activeProfile.id, activeProfile.name]);
+
+  useEffect(() => {
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     if (neuralClipCount > 0) return;
@@ -144,16 +214,25 @@ export function ParentDashboardModal({
     }
   };
 
+  const isAdultDomain =
+    activeProfile.ageMode === 'master' && Boolean(adultModules && adultModules.length > 0);
+
   const metrics = useMemo(() => {
+    const domainIds = new Set(
+      isAdultDomain
+        ? adultModules!.flatMap((m) => m.items.map((item) => item.id))
+        : worlds.flatMap((w) => w.items.map((item) => item.id)),
+    );
+
     const dedupCards = Array.from(
       new Map(
         Object.values(activeProfile.cards)
-          .filter((c) => c.lang === activeProfile.targetLang)
+          .filter((c) => c.lang === activeProfile.targetLang && domainIds.has(c.itemId))
           .map((c) => [c.itemId, c]),
       ).values(),
     );
 
-    const totalItems = worlds.reduce((acc, w) => acc + w.items.length, 0);
+    const totalItems = domainIds.size;
     const masteredCount = dedupCards.filter((c) => isItemAwakeInLivingWorld(c)).length;
     const learnedCards = dedupCards.filter((c) => c.reps > 0);
     const speakingCount = learnedCards.filter((c) => c.speakingCompleted).length;
@@ -200,7 +279,7 @@ export function ParentDashboardModal({
       maxBarMinutes,
       dueNowCount,
     };
-  }, [activeProfile, worlds]);
+  }, [activeProfile, adultModules, isAdultDomain, worlds]);
 
   const fsrsChart = useMemo(() => {
     const width = 640;
@@ -256,15 +335,64 @@ export function ParentDashboardModal({
 
   const handleDownloadBackup = () => {
     const json = exportVaultJson(vault);
+    const filename = `lingonest-yedek-${todayDateKey()}.json`;
+    const bridge = (
+      window as unknown as {
+        AndroidBridge?: { shareJsonBackup?: (filename: string, jsonContent: string) => void };
+      }
+    ).AndroidBridge;
+
+    if (bridge?.shareJsonBackup) {
+      bridge.shareJsonBackup(filename, json);
+      audioEngine.playChime('success', activeProfile.soundFxEnabled);
+      return;
+    }
+
     const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lingonest-yedek-${todayDateKey()}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1500);
+    audioEngine.playChime('success', activeProfile.soundFxEnabled);
+  };
+
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const res = importVaultJson(text);
+      if (res.ok) {
+        onImportVault?.(res.vault);
+        setRestoreFeedback({
+          ok: true,
+          text: `Yedek başarıyla geri yüklendi (${res.vault.profiles.length} profil aktif).`,
+        });
+        audioEngine.playChime('celebrate', activeProfile.soundFxEnabled);
+      } else {
+        setRestoreFeedback({ ok: false, text: res.error });
+        audioEngine.playChime('gentle-nudge', activeProfile.soundFxEnabled);
+      }
+    } catch {
+      setRestoreFeedback({
+        ok: false,
+        text: 'Dosya okunamadı — lütfen geçerli bir LingoNest JSON yedeği seçin.',
+      });
+      audioEngine.playChime('gentle-nudge', activeProfile.soundFxEnabled);
+    }
+  };
+
+  const handleSaveRename = () => {
+    const trimmed = renameDraft.trim().slice(0, 40);
+    if (!trimmed || trimmed === activeProfile.name) return;
+    onUpdateProfile({ ...activeProfile, name: trimmed });
     audioEngine.playChime('success', activeProfile.soundFxEnabled);
   };
 
@@ -285,6 +413,9 @@ export function ParentDashboardModal({
       role="dialog"
       aria-modal="true"
       aria-label="Ebeveyn Kontrol ve FSRS-5 Bilim Paneli"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="ln-parent-modal">
         <div className="ln-modal-header">
@@ -409,7 +540,9 @@ export function ParentDashboardModal({
               <div className="ln-stat-card">
                 <div className="ln-stat-label">
                   <Sparkles size={15} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-                  Uyanık Kelimeler ({activeProfile.targetLang.toUpperCase()})
+                  {isAdultDomain
+                    ? `Aktif İfadeler (${activeProfile.targetLang.toUpperCase()})`
+                    : `Uyanık Kelimeler (${activeProfile.targetLang.toUpperCase()})`}
                 </div>
                 <div className="ln-stat-value">
                   {metrics.masteredCount}{' '}
@@ -429,7 +562,8 @@ export function ParentDashboardModal({
                 </div>
                 <div className="ln-stat-value">%{metrics.speakingRatioPct}</div>
                 <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0284c7' }}>
-                  {metrics.speakingCount} / {metrics.learnedCount} kelime seslendirildi
+                  {metrics.speakingCount} / {metrics.learnedCount}{' '}
+                  {isAdultDomain ? 'ifade seslendirildi' : 'kelime seslendirildi'}
                 </div>
               </div>
 
@@ -640,6 +774,7 @@ export function ParentDashboardModal({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
+                          gap: 12,
                           padding: '10px 14px',
                           borderRadius: 14,
                           background: '#f8fafc',
@@ -647,7 +782,7 @@ export function ParentDashboardModal({
                           fontWeight: 800,
                         }}
                       >
-                        <span>{trapId}</span>
+                        <span>{formatPhoneticTrapLabel(trapId)}</span>
                         <span style={{ color: score >= 75 ? '#059669' : '#d97706' }}>%{Math.round(score)}</span>
                       </div>
                     ))}
@@ -700,8 +835,95 @@ export function ParentDashboardModal({
                   gap: 14,
                 }}
               >
-                <div style={{ fontWeight: 900, fontSize: '0.96rem' }}>
-                  Aktif Profil Ayarları ({activeProfile.avatarEmoji} {activeProfile.name})
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ fontWeight: 900, fontSize: '0.96rem' }}>
+                    Aktif Profil Ayarları ({activeProfile.avatarEmoji} {activeProfile.name})
+                  </div>
+
+                  {!confirmDeleteProfile ? (
+                    <button
+                      type="button"
+                      className="ln-clay-btn ln-clay-btn--coral"
+                      style={{ minHeight: 40, padding: '6px 14px', fontSize: '0.84rem' }}
+                      disabled={vault.profiles.length <= 1}
+                      title={
+                        vault.profiles.length <= 1
+                          ? 'En az 1 öğrenen profili kalmalıdır'
+                          : 'Bu profili sil'
+                      }
+                      onClick={() => setConfirmDeleteProfile(true)}
+                    >
+                      <Trash2 size={15} />
+                      <span>Profili Sil</span>
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="ln-clay-btn ln-clay-btn--coral"
+                        style={{ minHeight: 40, padding: '6px 14px', fontSize: '0.84rem' }}
+                        disabled={vault.profiles.length <= 1}
+                        onClick={() => {
+                          if (vault.profiles.length <= 1) return;
+                          setConfirmDeleteProfile(false);
+                          onDeleteProfile?.(activeProfile.id);
+                          audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                        }}
+                      >
+                        <span>Evet, Profili Sil</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="ln-clay-btn ln-clay-btn--soft"
+                        style={{ minHeight: 40, padding: '6px 14px', fontSize: '0.84rem' }}
+                        onClick={() => setConfirmDeleteProfile(false)}
+                      >
+                        <span>Vazgeç</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Inline Profile Rename */}
+                <div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--ln-ink-muted)', marginBottom: 6 }}>
+                    Profil Adı
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      className="ln-input"
+                      style={{ flex: '1 1 200px', minHeight: 44, padding: '8px 14px' }}
+                      aria-label="Profil adını düzenle"
+                      maxLength={40}
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSaveRename();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="ln-clay-btn ln-clay-btn--mint"
+                      style={{ minHeight: 44, padding: '8px 16px', fontSize: '0.9rem' }}
+                      disabled={!renameDraft.trim() || renameDraft.trim() === activeProfile.name}
+                      onClick={handleSaveRename}
+                    >
+                      <Check size={16} />
+                      <span>Adı Kaydet</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -732,11 +954,49 @@ export function ParentDashboardModal({
                         key={mode}
                         type="button"
                         className={`ln-chip-btn ${activeProfile.ageMode === mode ? 'is-selected' : ''}`}
-                        onClick={() => onUpdateProfile({ ...activeProfile, ageMode: mode })}
+                        onClick={() =>
+                          onChangeAgeMode
+                            ? onChangeAgeMode(mode)
+                            : onUpdateProfile({
+                                ...activeProfile,
+                                ageMode: mode,
+                                speechSlowMode: mode === 'mini',
+                              })
+                        }
                       >
                         {AGE_MODE_LABELS[mode]}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--ln-ink-muted)', marginBottom: 6 }}>
+                    Günlük Hedef
+                  </div>
+                  <div className="ln-chip-group">
+                    {([5, 10, 15, 20] as const).map((mins) => {
+                      const currentGoal =
+                        activeProfile.dailyGoalMinutes ??
+                        (activeProfile.ageMode === 'mini'
+                          ? 5
+                          : activeProfile.ageMode === 'explorer'
+                            ? 10
+                            : 15);
+                      return (
+                        <button
+                          key={mins}
+                          type="button"
+                          className={`ln-chip-btn ${currentGoal === mins ? 'is-selected' : ''}`}
+                          onClick={() => {
+                            audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                            onUpdateProfile({ ...activeProfile, dailyGoalMinutes: mins });
+                          }}
+                        >
+                          {mins} dk
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -751,7 +1011,7 @@ export function ParentDashboardModal({
                       })
                     }
                   >
-                    🐢 Yavaş & Net Telaffuz (0.78x): {activeProfile.speechSlowMode ? 'Açık' : 'Kapalı'}
+                    🐢 Yavaş & Net Telaffuz (0.80x): {activeProfile.speechSlowMode ? 'Açık' : 'Kapalı'}
                   </button>
 
                   <button
@@ -856,10 +1116,26 @@ export function ParentDashboardModal({
                 </div>
               </div>
 
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={handleImportFile}
+              />
+
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button type="button" className="ln-clay-btn ln-clay-btn--soft" onClick={handleDownloadBackup}>
                   <Download size={18} />
                   <span>JSON Yedeği İndir</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="ln-clay-btn ln-clay-btn--soft"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <span>📂 Yedeği Geri Yükle (JSON)</span>
                 </button>
 
                 {!confirmErase ? (
@@ -896,6 +1172,32 @@ export function ParentDashboardModal({
                   </div>
                 )}
               </div>
+
+              {restoreFeedback && (
+                <div
+                  role="status"
+                  style={{
+                    marginTop: 10,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    ...(restoreFeedback.ok
+                      ? {
+                          background: '#ecfdf5',
+                          border: '2px solid #34d399',
+                          color: '#065f46',
+                        }
+                      : {
+                          background: '#fff1f2',
+                          border: '2px solid #fda4af',
+                          color: '#9f1239',
+                        }),
+                  }}
+                >
+                  {restoreFeedback.text}
+                </div>
+              )}
             </div>
           </>
         )}

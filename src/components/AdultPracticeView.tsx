@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   Lightbulb,
+  Lock,
   Mic,
   MicOff,
   RefreshCw,
@@ -23,6 +24,7 @@ import type {
   FSRSGrade,
   LearnerProfile,
 } from '../types';
+import { ADULT_ITEM_BY_ID, ADULT_MODULES } from '../data/adultCurriculum';
 import { audioEngine, matchSpokenAttempt, type VoiceRole } from '../engine/audioEngine';
 import {
   MS_PER_DAY,
@@ -35,6 +37,7 @@ import {
 export interface AdultPracticeViewProps {
   module: AdultModule;
   profile: LearnerProfile;
+  dueOnlyItemIds?: string[];
   onRecordReview: (
     itemId: string,
     grade: FSRSGrade,
@@ -80,34 +83,74 @@ function normalizeClozeText(input: string): string {
     .trim();
 }
 
-function buildCharDiff(expectedRaw: string, actualRaw: string): DiffToken[] {
-  const expected = expectedRaw.trim();
-  const actual = actualRaw.trim();
-  const tokens: DiffToken[] = [];
-  const maxLen = Math.max(expected.length, actual.length);
+function normalizeClozePreservingDiacritics(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFC')
+    .replace(/[’'`]/g, "'")
+    .replace(/[^\p{L}\p{N}\s']/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  for (let i = 0; i < maxLen; i++) {
-    const expChar = expected[i];
-    const actChar = actual[i];
-    if (expChar !== undefined && actChar !== undefined) {
-      const same = normalizeClozeText(expChar) === normalizeClozeText(actChar);
-      tokens.push({
-        char: actChar,
-        state: same ? 'match' : 'wrong',
-      });
-    } else if (expChar !== undefined && actChar === undefined) {
-      tokens.push({
-        char: '·',
-        state: 'missing',
-      });
-    } else if (actChar !== undefined) {
-      tokens.push({
-        char: actChar,
-        state: 'extra',
-      });
+function charsEquivalent(expChar: string, actChar: string): boolean {
+  if (expChar.toLowerCase() === actChar.toLowerCase()) return true;
+  const eNorm = normalizeClozeText(expChar);
+  const aNorm = normalizeClozeText(actChar);
+  return eNorm.length > 0 && eNorm === aNorm;
+}
+
+function buildCharDiff(expectedRaw: string, actualRaw: string): DiffToken[] {
+  const expChars = Array.from(expectedRaw.trim().normalize('NFC'));
+  const actChars = Array.from(actualRaw.trim().normalize('NFC'));
+  const m = expChars.length;
+  const n = actChars.length;
+
+  if (m === 0 && n === 0) return [];
+  if (m === 0) return actChars.map((char) => ({ char, state: 'extra' as const }));
+  if (n === 0) return expChars.map(() => ({ char: '·', state: 'missing' as const }));
+
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array<number>(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (charsEquivalent(expChars[i - 1], actChars[j - 1])) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
-  return tokens;
+
+  const reversed: DiffToken[] = [];
+  let i = m;
+  let j = n;
+  while (i > 0 || j > 0) {
+    if (
+      i > 0 &&
+      j > 0 &&
+      charsEquivalent(expChars[i - 1], actChars[j - 1]) &&
+      dp[i][j] === dp[i - 1][j - 1]
+    ) {
+      reversed.push({ char: actChars[j - 1], state: 'match' });
+      i--;
+      j--;
+    } else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
+      reversed.push({ char: actChars[j - 1], state: 'wrong' });
+      i--;
+      j--;
+    } else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) {
+      reversed.push({ char: '·', state: 'missing' });
+      i--;
+    } else {
+      reversed.push({ char: actChars[j - 1], state: 'extra' });
+      j--;
+    }
+  }
+
+  return reversed.reverse();
 }
 
 function shuffleChunks(chunks: string[]): IndexedChunk[] {
@@ -135,42 +178,32 @@ function shuffleChunks(chunks: string[]): IndexedChunk[] {
 export function AdultPracticeView({
   module,
   profile,
+  dueOnlyItemIds,
   onRecordReview,
   onExit,
 }: AdultPracticeViewProps) {
   const itemById = useMemo(() => {
-    const map: Record<string, AdultPhraseItem> = {};
+    const map: Record<string, AdultPhraseItem> = { ...ADULT_ITEM_BY_ID };
     for (const item of module.items) {
       map[item.id] = item;
     }
     return map;
   }, [module.items]);
 
+  const isDueQueueMode = Boolean(dueOnlyItemIds && dueOnlyItemIds.length > 0);
+  const dueOnlyKey = isDueQueueMode ? dueOnlyItemIds!.join('|') : '';
+
   // Snapshot session queue on module/language mount so mid-session card updates don't reorder items
   const [queue, setQueue] = useState<string[]>(() =>
-    buildSessionQueue(
-      module.items.map((i) => i.id),
-      profile.cards,
-      profile.targetLang,
-      'master',
-    ),
+    dueOnlyItemIds && dueOnlyItemIds.length > 0
+      ? dueOnlyItemIds.filter((id) => Boolean(itemById[id]))
+      : buildSessionQueue(
+          module.items.map((i) => i.id),
+          profile.cards,
+          profile.targetLang,
+          'master',
+        ),
   );
-
-  useEffect(() => {
-    setQueue(
-      buildSessionQueue(
-        module.items.map((i) => i.id),
-        profile.cards,
-        profile.targetLang,
-        'master',
-      ),
-    );
-    setCurrentIndex(0);
-    setStep('context');
-    setSessionDone(false);
-    setReviewedSummary([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [module.id, profile.targetLang]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [step, setStep] = useState<PracticeStep>('context');
@@ -178,10 +211,49 @@ export function AdultPracticeView({
   const [reviewedSummary, setReviewedSummary] = useState<ReviewedSummaryItem[]>([]);
   const [isSpeakingAudio, setIsSpeakingAudio] = useState(false);
 
+  const prevResetDepsRef = useRef({
+    moduleId: module.id,
+    lang: profile.targetLang,
+    dueOnlyKey,
+  });
+
+  useEffect(() => {
+    const prev = prevResetDepsRef.current;
+    const moduleOrLangChanged =
+      prev.moduleId !== module.id || prev.lang !== profile.targetLang;
+    const dueChangedBeforeReviews =
+      prev.dueOnlyKey !== dueOnlyKey && reviewedSummary.length === 0 && !sessionDone;
+
+    prevResetDepsRef.current = {
+      moduleId: module.id,
+      lang: profile.targetLang,
+      dueOnlyKey,
+    };
+
+    if (!moduleOrLangChanged && !dueChangedBeforeReviews) return;
+
+    setQueue(
+      dueOnlyItemIds && dueOnlyItemIds.length > 0
+        ? dueOnlyItemIds.filter((id) => Boolean(itemById[id]))
+        : buildSessionQueue(
+            module.items.map((i) => i.id),
+            profile.cards,
+            profile.targetLang,
+            'master',
+          ),
+    );
+    setCurrentIndex(0);
+    setStep('context');
+    setSessionDone(false);
+    setReviewedSummary([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [module.id, profile.targetLang, dueOnlyKey]);
+
   // Step 2: Cloze production state
   const [clozeInput, setClozeInput] = useState('');
   const [clozeStatus, setClozeStatus] = useState<ClozeStatus>('idle');
-  const [clozeHintLen, setClozeHintLen] = useState(0);
+  const [clozeAccentWarning, setClozeAccentWarning] = useState(false);
+  const [hintCharsRevealed, setHintCharsRevealed] = useState(0);
   const [clozeAttempts, setClozeAttempts] = useState(0);
   const [clozePassed, setClozePassed] = useState(false);
   const clozeInputRef = useRef<HTMLInputElement | null>(null);
@@ -191,16 +263,22 @@ export function AdultPracticeView({
   const [placedChunks, setPlacedChunks] = useState<IndexedChunk[]>([]);
   const [syntaxStatus, setSyntaxStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [syntaxPassed, setSyntaxPassed] = useState(false);
+  const [syntaxSkipped, setSyntaxSkipped] = useState(false);
 
   const [speakStatus, setSpeakStatus] = useState<SpeakStatus>('idle');
   const [speakScorePct, setSpeakScorePct] = useState<number | null>(null);
   const [bestHeard, setBestHeard] = useState('');
   const [speakingDone, setSpeakingDone] = useState(false);
 
+  const micCancelledRef = useRef(false);
   const itemStartMsRef = useRef<number>(Date.now());
 
   const currentItemId = queue[currentIndex];
   const currentItem = currentItemId ? itemById[currentItemId] : undefined;
+  const currentModule = useMemo(
+    () => (currentItem ? ADULT_MODULES.find((m) => m.id === currentItem.moduleId) : undefined) ?? module,
+    [currentItem, module],
+  );
   const loc = currentItem?.langs[profile.targetLang];
 
   const locChunksRef = useRef<string[]>([]);
@@ -208,6 +286,7 @@ export function AdultPracticeView({
 
   // Reset per-item interactive state whenever advancing to a new item
   useEffect(() => {
+    micCancelledRef.current = true;
     audioEngine.stopSpeaking();
     audioEngine.stopListening();
     setIsSpeakingAudio(false);
@@ -215,7 +294,8 @@ export function AdultPracticeView({
     setStep('context');
     setClozeInput('');
     setClozeStatus('idle');
-    setClozeHintLen(0);
+    setClozeAccentWarning(false);
+    setHintCharsRevealed(0);
     setClozeAttempts(0);
     setClozePassed(false);
 
@@ -223,6 +303,7 @@ export function AdultPracticeView({
     setPlacedChunks([]);
     setSyntaxStatus('idle');
     setSyntaxPassed(false);
+    setSyntaxSkipped(false);
 
     setSpeakStatus('idle');
     setSpeakScorePct(null);
@@ -235,6 +316,7 @@ export function AdultPracticeView({
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
+      micCancelledRef.current = true;
       audioEngine.stopSpeaking();
       audioEngine.stopListening();
     };
@@ -282,10 +364,14 @@ export function AdultPracticeView({
     setClozeAttempts((n) => n + 1);
 
     if (userNorm === targetNorm) {
+      const strictUser = normalizeClozePreservingDiacritics(clozeInput);
+      const strictTarget = normalizeClozePreservingDiacritics(loc.clozeAnswer);
+      setClozeAccentWarning(strictUser !== strictTarget);
       setClozeStatus('correct');
       setClozePassed(true);
       audioEngine.playChime('success', profile.soundFxEnabled);
     } else {
+      setClozeAccentWarning(false);
       setClozeStatus('wrong');
       audioEngine.playChime('gentle-nudge', profile.soundFxEnabled);
     }
@@ -294,10 +380,11 @@ export function AdultPracticeView({
   const handleClozeHint = () => {
     if (!loc) return;
     const answer = loc.clozeAnswer.trim();
-    const nextLen = Math.min(answer.length, Math.max(1, clozeHintLen + 1));
-    setClozeHintLen(nextLen);
+    const nextLen = Math.min(answer.length, Math.max(1, hintCharsRevealed + 1));
+    setHintCharsRevealed(nextLen);
     setClozeInput(answer.slice(0, nextLen));
     setClozeStatus('idle');
+    setClozeAccentWarning(false);
     audioEngine.playChime('tap', profile.soundFxEnabled);
     clozeInputRef.current?.focus();
   };
@@ -306,6 +393,7 @@ export function AdultPracticeView({
     if (!loc) return;
     setClozeInput(loc.clozeAnswer);
     setClozeStatus('revealed');
+    setClozeAccentWarning(false);
     setClozePassed(false);
     audioEngine.playChime('tap', profile.soundFxEnabled);
   };
@@ -369,11 +457,15 @@ export function AdultPracticeView({
     }
 
     if (speakStatus === 'listening') {
+      micCancelledRef.current = true;
       audioEngine.stopListening();
       setSpeakStatus('idle');
+      setSpeakScorePct(null);
+      setBestHeard('');
       return;
     }
 
+    micCancelledRef.current = false;
     audioEngine.stopSpeaking();
     setSpeakStatus('listening');
     setBestHeard('');
@@ -382,6 +474,7 @@ export function AdultPracticeView({
     audioEngine.startListening(
       profile.targetLang,
       (alts) => {
+        if (micCancelledRef.current) return;
         const res = matchSpokenAttempt(loc.phrase, loc.clozeAnswer, alts, false);
         setSpeakScorePct(Math.round(res.score * 100));
         setBestHeard(res.bestHeard);
@@ -395,7 +488,16 @@ export function AdultPracticeView({
         }
       },
       (reason) => {
-        if (reason === 'unsupported') {
+        if (
+          micCancelledRef.current ||
+          reason === 'aborted' ||
+          reason === 'canceled' ||
+          reason === 'cancelled'
+        ) {
+          setSpeakStatus('idle');
+          return;
+        }
+        if (reason === 'unsupported' || reason === 'not-allowed') {
           setSpeakStatus('unsupported');
         } else {
           setSpeakStatus('retry');
@@ -445,12 +547,14 @@ export function AdultPracticeView({
     );
   }, [currentCard, currentItem, profile.ageMode, profile.targetLang]);
 
-  const recommendGoodGrade = clozePassed && syntaxPassed;
+  const recommendedGrade: FSRSGrade | null =
+    clozePassed && syntaxPassed ? (hintCharsRevealed >= 2 ? 2 : 3) : null;
 
   const handleRate = useCallback(
     (grade: FSRSGrade) => {
       if (!currentItem || !intervalPreviews) return;
       const elapsedSec = Math.max(1, Math.round((Date.now() - itemStartMsRef.current) / 1000));
+      micCancelledRef.current = true;
       audioEngine.stopSpeaking();
       audioEngine.stopListening();
       audioEngine.playChime(grade >= 3 ? 'success' : 'tap', profile.soundFxEnabled);
@@ -464,7 +568,7 @@ export function AdultPracticeView({
           grade,
           newStability: intervalPreviews[grade].nextStability,
           speakingDone,
-          cleanAccuracy: clozePassed && syntaxPassed,
+          cleanAccuracy: clozePassed && syntaxPassed && hintCharsRevealed < 2,
         },
       ]);
 
@@ -479,6 +583,7 @@ export function AdultPracticeView({
       clozePassed,
       currentIndex,
       currentItem,
+      hintCharsRevealed,
       intervalPreviews,
       onRecordReview,
       profile.soundFxEnabled,
@@ -536,7 +641,9 @@ export function AdultPracticeView({
           <div className="ln-adult-summary-icon">
             <Award size={32} aria-hidden="true" />
           </div>
-          <span className="ln-adult-kicker">{module.titleTr}</span>
+          <span className="ln-adult-kicker">
+            {isDueQueueMode ? 'FSRS Günlük Karma Tekrar' : module.titleTr}
+          </span>
           <h2>FSRS-5 Oturumu Tamamlandı</h2>
           <p className="ln-adult-subtitle">
             Bellek stabiliteleri güncellendi ve optimal aralıklar yeniden hesaplandı.
@@ -597,7 +704,7 @@ export function AdultPracticeView({
   return (
     <section
       className="ln-adult-practice"
-      style={{ ['--ln-adult-accent' as string]: module.accentHex }}
+      style={{ ['--ln-adult-accent' as string]: currentModule.accentHex }}
     >
       {/* Top Bar */}
       <div className="ln-adult-practice-topbar">
@@ -605,6 +712,7 @@ export function AdultPracticeView({
           type="button"
           className="ln-adult-btn ln-adult-btn--ghost"
           onClick={() => {
+            micCancelledRef.current = true;
             audioEngine.stopSpeaking();
             audioEngine.stopListening();
             onExit();
@@ -617,7 +725,8 @@ export function AdultPracticeView({
         <div className="ln-adult-practice-progress">
           <div className="ln-adult-practice-meta">
             <span>
-              {module.icon} {module.titleTr}
+              {currentModule.icon}{' '}
+              {isDueQueueMode ? `FSRS Tekrar · ${currentModule.titleTr}` : currentModule.titleTr}
             </span>
             <strong>
               {currentIndex + 1} / {queue.length}
@@ -686,7 +795,7 @@ export function AdultPracticeView({
                 onClick={() => speakAtSpeed(loc.phrase, 'slow')}
               >
                 <Volume2 size={15} aria-hidden="true" />
-                <span>Yavaş (0.78x)</span>
+                <span>Yavaş (0.80x)</span>
               </button>
               <button
                 type="button"
@@ -791,6 +900,7 @@ export function AdultPracticeView({
                   onChange={(e) => {
                     setClozeInput(e.target.value);
                     if (clozeStatus === 'wrong') setClozeStatus('idle');
+                    if (clozeAccentWarning) setClozeAccentWarning(false);
                   }}
                   placeholder="Eksik ifadeyi yazın ve Enter'a basın..."
                   autoComplete="off"
@@ -848,9 +958,20 @@ export function AdultPracticeView({
             )}
 
             {clozeStatus === 'correct' && (
-              <div className="ln-adult-feedback-banner is-success" role="status">
-                <CheckCircle2 size={16} aria-hidden="true" />
-                <span>Kusursuz üretim: “{loc.clozeAnswer}”</span>
+              <div
+                className={`ln-adult-feedback-banner ${clozeAccentWarning ? 'is-warn' : 'is-success'}`}
+                role="status"
+              >
+                {clozeAccentWarning ? (
+                  <AlertTriangle size={16} aria-hidden="true" />
+                ) : (
+                  <CheckCircle2 size={16} aria-hidden="true" />
+                )}
+                <span>
+                  {clozeAccentWarning
+                    ? `Doğru, ancak aksan/umlauta dikkat: ${loc.clozeAnswer}`
+                    : `Kusursuz üretim: “${loc.clozeAnswer}”`}
+                </span>
               </div>
             )}
 
@@ -877,189 +998,231 @@ export function AdultPracticeView({
         )}
 
         {/* STEP 3: Word-Order Builder + Shadowing Speech Check */}
-        {step === 'produce' && (
-          <div className="ln-adult-step-body">
-            {/* Part A: Word-Order Syntax Builder */}
-            <div className="ln-adult-syntax-panel">
-              <div className="ln-adult-syntax-head">
-                <div>
-                  <h3 className="ln-adult-step-title">Sözdizimi Sıralama (SOV → SVO)</h3>
-                  <p className="ln-adult-tr-meaning">{currentItem.turkishMeaning}</p>
-                </div>
-                <div className="ln-adult-syntax-controls">
-                  <button
-                    type="button"
-                    className="ln-adult-btn ln-adult-btn--ghost"
-                    onClick={handleResetSyntax}
-                  >
-                    <RotateCcw size={14} aria-hidden="true" />
-                    <span>Sıfırla</span>
-                  </button>
-                  {syntaxStatus === 'wrong' && (
+        {step === 'produce' && (() => {
+          const syntaxSolved = syntaxStatus === 'correct' || syntaxSkipped;
+          return (
+            <div className="ln-adult-step-body">
+              {/* Part A: Word-Order Syntax Builder */}
+              <div className="ln-adult-syntax-panel">
+                <div className="ln-adult-syntax-head">
+                  <div>
+                    <h3 className="ln-adult-step-title">Sözdizimi Sıralama (SOV → SVO)</h3>
+                    <p className="ln-adult-tr-meaning">{currentItem.turkishMeaning}</p>
+                  </div>
+                  <div className="ln-adult-syntax-controls">
                     <button
                       type="button"
                       className="ln-adult-btn ln-adult-btn--ghost"
-                      onClick={handleRevealSyntax}
+                      onClick={handleResetSyntax}
                     >
-                      <span>Doğrusunu Diz</span>
+                      <RotateCcw size={14} aria-hidden="true" />
+                      <span>Sıfırla</span>
                     </button>
+                    {syntaxStatus === 'wrong' && (
+                      <button
+                        type="button"
+                        className="ln-adult-btn ln-adult-btn--ghost"
+                        onClick={handleRevealSyntax}
+                      >
+                        <span>Doğrusunu Diz</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className={`ln-adult-syntax-tray ${
+                    syntaxStatus === 'correct'
+                      ? 'is-correct'
+                      : syntaxStatus === 'wrong'
+                        ? 'is-wrong'
+                        : ''
+                  }`}
+                >
+                  {placedChunks.length === 0 ? (
+                    <span className="ln-adult-tray-placeholder">
+                      Aşağıdaki bloklara sırayla dokunarak cümleyi kurun…
+                    </span>
+                  ) : (
+                    placedChunks.map((chunk) => (
+                      <button
+                        key={chunk.idx}
+                        type="button"
+                        className="ln-adult-chunk-chip is-placed"
+                        onClick={() => handleRemovePlacedChunk(chunk)}
+                      >
+                        {chunk.text}
+                      </button>
+                    ))
                   )}
                 </div>
-              </div>
 
-              <div
-                className={`ln-adult-syntax-tray ${
-                  syntaxStatus === 'correct'
-                    ? 'is-correct'
-                    : syntaxStatus === 'wrong'
-                      ? 'is-wrong'
-                      : ''
-                }`}
-              >
-                {placedChunks.length === 0 ? (
-                  <span className="ln-adult-tray-placeholder">
-                    Aşağıdaki bloklara sırayla dokunarak cümleyi kurun…
-                  </span>
-                ) : (
-                  placedChunks.map((chunk) => (
+                <div className="ln-adult-syntax-bank">
+                  {bankChunks.map((chunk) => (
                     <button
                       key={chunk.idx}
                       type="button"
-                      className="ln-adult-chunk-chip is-placed"
-                      onClick={() => handleRemovePlacedChunk(chunk)}
+                      className="ln-adult-chunk-chip"
+                      onClick={() => handlePickBankChunk(chunk)}
                     >
                       {chunk.text}
                     </button>
-                  ))
+                  ))}
+                </div>
+
+                {syntaxStatus === 'correct' && (
+                  <div className="ln-adult-feedback-banner is-success">
+                    <CheckCircle2 size={16} aria-hidden="true" />
+                    <span>Doğru sözdizimi: “{loc.wordOrderChunks.join(' ')}”</span>
+                  </div>
+                )}
+                {syntaxStatus === 'wrong' && (
+                  <div className="ln-adult-feedback-banner is-warn">
+                    <AlertTriangle size={16} aria-hidden="true" />
+                    <span>Sıra hedef kalıpla uyuşmuyor — bloklara dokunup yeniden düzenleyin.</span>
+                  </div>
                 )}
               </div>
 
-              <div className="ln-adult-syntax-bank">
-                {bankChunks.map((chunk) => (
-                  <button
-                    key={chunk.idx}
-                    type="button"
-                    className="ln-adult-chunk-chip"
-                    onClick={() => handlePickBankChunk(chunk)}
-                  >
-                    {chunk.text}
-                  </button>
-                ))}
-              </div>
+              {/* Part B: Shadowing Speech Check */}
+              <div className="ln-adult-shadowing-panel">
+                {!syntaxSolved ? (
+                  <div className="ln-adult-shadowing-head">
+                    <div>
+                      <h3 className="ln-adult-step-title">Gölgeleme (Shadowing) Ses Kontrolü</h3>
+                      <p
+                        className="ln-adult-shadowing-target"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <Lock size={14} aria-hidden="true" />
+                        <span>
+                          Önce yukarıdaki cümleyi sıraya diz — ardından Gölgeleme (Shadowing) açılacak.
+                        </span>
+                      </p>
+                    </div>
 
-              {syntaxStatus === 'correct' && (
-                <div className="ln-adult-feedback-banner is-success">
-                  <CheckCircle2 size={16} aria-hidden="true" />
-                  <span>Doğru sözdizimi: “{loc.wordOrderChunks.join(' ')}”</span>
-                </div>
-              )}
-              {syntaxStatus === 'wrong' && (
-                <div className="ln-adult-feedback-banner is-warn">
-                  <AlertTriangle size={16} aria-hidden="true" />
-                  <span>Sıra hedef kalıpla uyuşmuyor — bloklara dokunup yeniden düzenleyin.</span>
-                </div>
-              )}
-            </div>
+                    <button
+                      type="button"
+                      className="ln-adult-btn ln-adult-btn--ghost"
+                      onClick={() => {
+                        audioEngine.playChime('tap', profile.soundFxEnabled);
+                        setSyntaxSkipped(true);
+                      }}
+                    >
+                      <SkipForward size={15} aria-hidden="true" />
+                      <span>Sözdizimini Atla ve Gölgelemeye Geç</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="ln-adult-shadowing-head">
+                      <div>
+                        <h3 className="ln-adult-step-title">Gölgeleme (Shadowing) Ses Kontrolü</h3>
+                        <p className="ln-adult-shadowing-target">
+                          Hedef: <strong>{loc.phrase}</strong>
+                        </p>
+                      </div>
 
-            {/* Part B: Shadowing Speech Check */}
-            <div className="ln-adult-shadowing-panel">
-              <div className="ln-adult-shadowing-head">
-                <div>
-                  <h3 className="ln-adult-step-title">Gölgeleme (Shadowing) Ses Kontrolü</h3>
-                  <p className="ln-adult-shadowing-target">
-                    Hedef: <strong>{loc.phrase}</strong>
-                  </p>
-                </div>
+                      <div className="ln-adult-shadowing-btns">
+                        <button
+                          type="button"
+                          className="ln-adult-btn ln-adult-btn--secondary"
+                          onClick={() => speakAtSpeed(loc.phrase, 'normal')}
+                        >
+                          <Volume2 size={15} aria-hidden="true" />
+                          <span>Modeli Dinle</span>
+                        </button>
 
-                <div className="ln-adult-shadowing-btns">
-                  <button
-                    type="button"
-                    className="ln-adult-btn ln-adult-btn--secondary"
-                    onClick={() => speakAtSpeed(loc.phrase, 'normal')}
-                  >
-                    <Volume2 size={15} aria-hidden="true" />
-                    <span>Modeli Dinle</span>
-                  </button>
+                        <button
+                          type="button"
+                          className={`ln-adult-btn ${
+                            speakStatus === 'listening'
+                              ? 'ln-adult-btn--danger'
+                              : 'ln-adult-btn--primary'
+                          }`}
+                          onClick={handleStartShadowing}
+                        >
+                          {speakStatus === 'listening' ? (
+                            <>
+                              <MicOff size={15} aria-hidden="true" />
+                              <span>Dinleniyor... (Durdur)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Mic size={15} aria-hidden="true" />
+                              <span>Mikrofonla Tekrar Et</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    className={`ln-adult-btn ${
-                      speakStatus === 'listening' ? 'ln-adult-btn--danger' : 'ln-adult-btn--primary'
-                    }`}
-                    onClick={handleStartShadowing}
-                  >
-                    {speakStatus === 'listening' ? (
-                      <>
-                        <MicOff size={15} aria-hidden="true" />
-                        <span>Dinleniyor... (Durdur)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mic size={15} aria-hidden="true" />
-                        <span>Mikrofonla Tekrar Et</span>
-                      </>
+                    {speakStatus === 'matched' && speakScorePct !== null && (
+                      <div className="ln-adult-feedback-banner is-success">
+                        <CheckCircle2 size={16} aria-hidden="true" />
+                        <span>
+                          Telaffuz Eşleşti: <strong>%{speakScorePct}</strong>
+                          {bestHeard ? ` · Algılanan: “${bestHeard}”` : ''}
+                        </span>
+                      </div>
                     )}
-                  </button>
-                </div>
+
+                    {speakStatus === 'retry' && (
+                      <div className="ln-adult-feedback-banner is-warn">
+                        <RefreshCw size={15} aria-hidden="true" />
+                        <span>
+                          Skor: <strong>%{speakScorePct ?? 0}</strong> (Yetişkin eşiği %78)
+                          {bestHeard
+                            ? ` · Algılanan: “${bestHeard}”`
+                            : ' · Ses algılanamadı, tekrar deneyin.'}
+                        </span>
+                      </div>
+                    )}
+
+                    {speakStatus === 'unsupported' && (
+                      <div className="ln-adult-feedback-banner is-info">
+                        <AlertTriangle size={15} aria-hidden="true" />
+                        <span>
+                          Bu tarayıcıda Web Speech mikrofon tanıma desteklenmiyor; sesli okuyup
+                          derecelendirmeye geçebilirsiniz.
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
-              {speakStatus === 'matched' && speakScorePct !== null && (
-                <div className="ln-adult-feedback-banner is-success">
-                  <CheckCircle2 size={16} aria-hidden="true" />
-                  <span>
-                    Telaffuz Eşleşti: <strong>%{speakScorePct}</strong>
-                    {bestHeard ? ` · Algılanan: “${bestHeard}”` : ''}
-                  </span>
-                </div>
-              )}
-
-              {speakStatus === 'retry' && (
-                <div className="ln-adult-feedback-banner is-warn">
-                  <RefreshCw size={15} aria-hidden="true" />
-                  <span>
-                    Skor: <strong>%{speakScorePct ?? 0}</strong> (Yetişkin eşiği %78)
-                    {bestHeard ? ` · Algılanan: “${bestHeard}”` : ' · Ses algılanamadı, tekrar deneyin.'}
-                  </span>
-                </div>
-              )}
-
-              {speakStatus === 'unsupported' && (
-                <div className="ln-adult-feedback-banner is-info">
-                  <AlertTriangle size={15} aria-hidden="true" />
-                  <span>
-                    Bu tarayıcıda Web Speech mikrofon tanıma desteklenmiyor; sesli okuyup
-                    derecelendirmeye geçebilirsiniz.
-                  </span>
-                </div>
-              )}
+              <div className="ln-adult-step-actions">
+                <button
+                  type="button"
+                  className="ln-adult-btn ln-adult-btn--ghost"
+                  onClick={() => {
+                    micCancelledRef.current = true;
+                    audioEngine.stopListening();
+                    setSpeakStatus('idle');
+                    setStep('rate');
+                  }}
+                >
+                  <SkipForward size={15} aria-hidden="true" />
+                  <span>Atla ve Puanla</span>
+                </button>
+                <button
+                  type="button"
+                  className="ln-adult-btn ln-adult-btn--primary"
+                  onClick={() => {
+                    micCancelledRef.current = true;
+                    audioEngine.stopListening();
+                    setSpeakStatus('idle');
+                    setStep('rate');
+                  }}
+                >
+                  <span>FSRS-5 Derecelendirmeye Geç</span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </div>
             </div>
-
-            <div className="ln-adult-step-actions">
-              <button
-                type="button"
-                className="ln-adult-btn ln-adult-btn--ghost"
-                onClick={() => {
-                  audioEngine.stopListening();
-                  setStep('rate');
-                }}
-              >
-                <SkipForward size={15} aria-hidden="true" />
-                <span>Atla ve Puanla</span>
-              </button>
-              <button
-                type="button"
-                className="ln-adult-btn ln-adult-btn--primary"
-                onClick={() => {
-                  audioEngine.stopListening();
-                  setStep('rate');
-                }}
-              >
-                <span>FSRS-5 Derecelendirmeye Geç</span>
-                <ArrowRight size={16} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* STEP 4: Transparent FSRS-5 DSR Rating */}
         {step === 'rate' && intervalPreviews && (
@@ -1114,9 +1277,23 @@ export function AdultPracticeView({
 
               <button
                 type="button"
-                className="ln-adult-grade-btn is-hard"
+                className={`ln-adult-grade-btn is-hard ${recommendedGrade === 2 ? 'is-recommended' : ''}`}
+                style={
+                  recommendedGrade === 2
+                    ? {
+                        background: 'rgba(245, 158, 11, 0.16)',
+                        borderColor: '#f59e0b',
+                        boxShadow: '0 0 20px rgba(245, 158, 11, 0.22)',
+                      }
+                    : undefined
+                }
                 onClick={() => handleRate(2)}
               >
+                {recommendedGrade === 2 && (
+                  <span className="ln-adult-rec-tag" style={{ background: '#f59e0b' }}>
+                    Önerilen
+                  </span>
+                )}
                 <span className="ln-adult-grade-title">2 · Zor</span>
                 <strong className="ln-adult-grade-interval">{intervalPreviews[2].label}</strong>
                 <small>S → {intervalPreviews[2].nextStability}g</small>
@@ -1124,10 +1301,10 @@ export function AdultPracticeView({
 
               <button
                 type="button"
-                className={`ln-adult-grade-btn is-good ${recommendGoodGrade ? 'is-recommended' : ''}`}
+                className={`ln-adult-grade-btn is-good ${recommendedGrade === 3 ? 'is-recommended' : ''}`}
                 onClick={() => handleRate(3)}
               >
-                {recommendGoodGrade && (
+                {recommendedGrade === 3 && (
                   <span className="ln-adult-rec-tag">Önerilen</span>
                 )}
                 <span className="ln-adult-grade-title">3 · İyi</span>

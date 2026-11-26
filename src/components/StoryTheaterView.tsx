@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,6 +23,7 @@ export interface StoryTheaterViewProps {
   profile: LearnerProfile;
   onCompleteStory: (storyId: string) => void;
   onBack: () => void;
+  onRegisterSubBack?: (fn: (() => boolean) | null) => void;
 }
 
 type StoryPhase = 'reading' | 'quiz' | 'done';
@@ -42,6 +43,7 @@ export function StoryTheaterView({
   profile,
   onCompleteStory,
   onBack,
+  onRegisterSubBack,
 }: StoryTheaterViewProps) {
   const isMini = profile.ageMode === 'mini';
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
@@ -57,19 +59,41 @@ export function StoryTheaterView({
 
   const timerRef = useRef<number | null>(null);
 
-  const clearPendingTimer = () => {
+  const clearPendingTimer = useCallback(() => {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
       clearPendingTimer();
       audioEngine.stopSpeaking();
     };
-  }, []);
+  }, [clearPendingTimer]);
+
+  const handleCloseStory = useCallback(() => {
+    clearPendingTimer();
+    audioEngine.stopSpeaking();
+    setIsSpeaking(false);
+    setActiveStoryId(null);
+  }, [clearPendingTimer]);
+
+  useEffect(() => {
+    if (!onRegisterSubBack) return undefined;
+    if (activeStoryId !== null) {
+      onRegisterSubBack(() => {
+        handleCloseStory();
+        return true;
+      });
+    } else {
+      onRegisterSubBack(null);
+    }
+    return () => {
+      onRegisterSubBack(null);
+    };
+  }, [activeStoryId, handleCloseStory, onRegisterSubBack]);
 
   const awakeCount = useMemo(() => {
     const prefix = `${profile.targetLang}:`;
@@ -169,13 +193,6 @@ export function StoryTheaterView({
     if (story.lines.length === 0) {
       prepareQuiz(story);
     }
-  };
-
-  const handleCloseStory = () => {
-    clearPendingTimer();
-    audioEngine.stopSpeaking();
-    setIsSpeaking(false);
-    setActiveStoryId(null);
   };
 
   const handleNextLine = () => {
@@ -433,7 +450,7 @@ export function StoryTheaterView({
               justifyContent: 'center',
               gap: '14px',
               position: 'relative',
-              minHeight: '220px',
+              minHeight: 'clamp(140px, 26vh, 210px)',
             }}
           >
             <div
@@ -500,7 +517,7 @@ export function StoryTheaterView({
                     className="ln-clay-btn ln-clay-btn--gold"
                     style={{ minHeight: '44px', padding: '8px 14px', fontSize: '0.95rem' }}
                     onClick={() => speakStoryText(currentLine.text[profile.targetLang], true)}
-                    title="0.78x Yavaş Dinle"
+                    title="0.80x Yavaş Dinle"
                   >
                     🐢
                   </button>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart3,
   BookOpen,
@@ -12,7 +12,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
-import type { AgeMode, AppView, FSRSGrade, LanguageCode, LearnerProfile } from './types';
+import type { AdultModule, AgeMode, AppView, FSRSGrade, LanguageCode, LearnerProfile } from './types';
 import {
   ALL_VOCAB,
   getWorldById,
@@ -25,12 +25,20 @@ import {
 import {
   ADULT_DIALOGUES,
   ADULT_MODULES,
+  ALL_ADULT_ITEMS,
   getAdultModuleById,
 } from './data/adultCurriculum';
 import { audioEngine } from './engine/audioEngine';
-import { cardKey, isItemAwakeInLivingWorld, reviewCardFSRS5 } from './engine/fsrs5';
+import {
+  buildCrossModuleDueQueue,
+  cardKey,
+  isItemAwakeInLivingWorld,
+  reviewCardFSRS5,
+} from './engine/fsrs5';
 import {
   createProfile,
+  defaultDailyGoalForAge,
+  defaultNameForAge,
   eraseVaultCompletely,
   loadVault,
   saveVault,
@@ -47,6 +55,7 @@ import { AdultStudioView } from './components/AdultStudioView';
 import { AdultPracticeView } from './components/AdultPracticeView';
 import { AdultDialogueView } from './components/AdultDialogueView';
 import { ParentDashboardModal } from './components/ParentDashboardModal';
+import { OnboardingModal } from './components/OnboardingModal';
 
 const AGE_BADGE: Record<AgeMode, { emoji: string; label: string }> = {
   mini: { emoji: '🐣', label: 'Mini (4–7)' },
@@ -60,6 +69,19 @@ const THEME_COLOR_BY_MODE: Record<AgeMode, string> = {
   master: '#090E1A',
 };
 
+const DEFAULT_PROFILE_NAMES = new Set([
+  'Minik Kaşif',
+  'Genç Kaşif',
+  'Usta Öğrenen',
+  'Yetişkin Profil',
+]);
+
+const DEFAULT_AVATAR_BY_MODE: Record<AgeMode, string> = {
+  mini: '🐣',
+  explorer: '🧭',
+  master: '🎓',
+};
+
 export function App() {
   const [vault, setVault] = useState<VaultState>(() => loadVault());
   const [view, setView] = useState<AppView>('worlds');
@@ -67,7 +89,19 @@ export function App() {
   const [activeAdultModuleId, setActiveAdultModuleId] = useState<string>(
     ADULT_MODULES[0]?.id ?? 'daily_fluency',
   );
+  const [adultDueQueueIds, setAdultDueQueueIds] = useState<string[] | null>(null);
   const [showParentModal, setShowParentModal] = useState(false);
+
+  const switcherBackRef = useRef<(() => boolean) | null>(null);
+  const viewSubBackRef = useRef<(() => boolean) | null>(null);
+
+  const handleRegisterSwitcherBack = useCallback((fn: (() => boolean) | null) => {
+    switcherBackRef.current = fn;
+  }, []);
+
+  const handleRegisterViewSubBack = useCallback((fn: (() => boolean) | null) => {
+    viewSubBackRef.current = fn;
+  }, []);
 
   useEffect(() => {
     saveVault(vault);
@@ -93,18 +127,28 @@ export function App() {
     }
   }, [activeProfile.ageMode]);
 
-  // Register Android hardware/gesture back handler
+  // Register Android hardware/gesture back handler (Modal → Child-Lock → Sub-View → Root)
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const win = window as unknown as { __lingonestGoBack?: () => boolean };
     win.__lingonestGoBack = () => {
+      if (!vault.onboardingDone) {
+        return false;
+      }
       if (showParentModal) {
         setShowParentModal(false);
+        return true;
+      }
+      if (switcherBackRef.current?.()) {
+        return true;
+      }
+      if (viewSubBackRef.current?.()) {
         return true;
       }
       if (view !== 'worlds') {
         audioEngine.stopSpeaking();
         audioEngine.stopListening();
+        setAdultDueQueueIds(null);
         setView('worlds');
         return true;
       }
@@ -113,7 +157,7 @@ export function App() {
     return () => {
       delete win.__lingonestGoBack;
     };
-  }, [showParentModal, view]);
+  }, [showParentModal, vault.onboardingDone, view]);
 
   const updateActiveProfile = useCallback((updater: (prev: LearnerProfile) => LearnerProfile) => {
     setVault((v) => ({
@@ -133,6 +177,7 @@ export function App() {
     audioEngine.stopSpeaking();
     audioEngine.stopListening();
     setVault((v) => ({ ...v, activeProfileId: profileId }));
+    setAdultDueQueueIds(null);
     setView('worlds');
   }, []);
 
@@ -140,9 +185,64 @@ export function App() {
     (name: string, avatar: string, ageMode: AgeMode, lang: LanguageCode) => {
       const created = createProfile(name, avatar, ageMode, lang);
       setVault((v) => ({
+        ...v,
+        onboardingDone: true,
         activeProfileId: created.id,
         profiles: [...v.profiles, created],
       }));
+      setAdultDueQueueIds(null);
+      setView('worlds');
+    },
+    [],
+  );
+
+  const handleDeleteProfile = useCallback((profileId: string) => {
+    audioEngine.stopSpeaking();
+    audioEngine.stopListening();
+    setVault((v) => {
+      if (v.profiles.length <= 1) return v;
+      const remaining = v.profiles.filter((p) => p.id !== profileId);
+      const nextActive =
+        v.activeProfileId === profileId ? remaining[0].id : v.activeProfileId;
+      return {
+        ...v,
+        activeProfileId: nextActive,
+        profiles: remaining,
+      };
+    });
+    setAdultDueQueueIds(null);
+    setView('worlds');
+  }, []);
+
+  const handleImportVault = useCallback((restored: VaultState) => {
+    audioEngine.stopSpeaking();
+    audioEngine.stopListening();
+    setVault({ ...restored, onboardingDone: true });
+    setAdultDueQueueIds(null);
+    setView('worlds');
+  }, []);
+
+  const handleCompleteOnboarding = useCallback(
+    (name: string, ageMode: AgeMode, targetLang: LanguageCode) => {
+      setVault((v) => {
+        const active = v.profiles.find((p) => p.id === v.activeProfileId) ?? v.profiles[0];
+        if (!active) return { ...v, onboardingDone: true };
+        const updatedActive: LearnerProfile = {
+          ...active,
+          name: name.trim() || defaultNameForAge(ageMode),
+          avatarEmoji: DEFAULT_AVATAR_BY_MODE[ageMode],
+          ageMode,
+          targetLang,
+          speechSlowMode: ageMode === 'mini',
+          dailyGoalMinutes: defaultDailyGoalForAge(ageMode),
+        };
+        return {
+          ...v,
+          onboardingDone: true,
+          profiles: v.profiles.map((p) => (p.id === active.id ? updatedActive : p)),
+        };
+      });
+      setAdultDueQueueIds(null);
       setView('worlds');
     },
     [],
@@ -151,6 +251,7 @@ export function App() {
   const handleEraseAll = useCallback(() => {
     const fresh = eraseVaultCompletely();
     setVault(fresh);
+    setAdultDueQueueIds(null);
     setView('worlds');
     setShowParentModal(false);
   }, []);
@@ -160,11 +261,23 @@ export function App() {
       audioEngine.stopSpeaking();
       audioEngine.stopListening();
       audioEngine.playChime('tap', activeProfile.soundFxEnabled);
-      updateActiveProfile((prev) => ({
-        ...prev,
-        ageMode: nextMode,
-        speechSlowMode: nextMode === 'mini',
-      }));
+      updateActiveProfile((prev) => {
+        const isDefaultName = DEFAULT_PROFILE_NAMES.has(prev.name.trim());
+        const isDefaultAvatar = Object.values(DEFAULT_AVATAR_BY_MODE).includes(prev.avatarEmoji);
+        const prevDefaultGoal = defaultDailyGoalForAge(prev.ageMode);
+        return {
+          ...prev,
+          ageMode: nextMode,
+          name: isDefaultName ? defaultNameForAge(nextMode) : prev.name,
+          avatarEmoji: isDefaultAvatar ? DEFAULT_AVATAR_BY_MODE[nextMode] : prev.avatarEmoji,
+          speechSlowMode: nextMode === 'mini',
+          dailyGoalMinutes:
+            !prev.dailyGoalMinutes || prev.dailyGoalMinutes === prevDefaultGoal
+              ? defaultDailyGoalForAge(nextMode)
+              : prev.dailyGoalMinutes,
+        };
+      });
+      setAdultDueQueueIds(null);
       setView('worlds');
     },
     [activeProfile.soundFxEnabled, updateActiveProfile],
@@ -182,11 +295,30 @@ export function App() {
   const handleStartAdultModule = useCallback(
     (moduleId: string) => {
       audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+      setAdultDueQueueIds(null);
       setActiveAdultModuleId(moduleId);
       setView('adult-practice');
     },
     [activeProfile.soundFxEnabled],
   );
+
+  const handleStartAdultDueQueue = useCallback(() => {
+    audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+    const dueIds = buildCrossModuleDueQueue(
+      ALL_ADULT_ITEMS.map((item) => item.id),
+      activeProfile.cards,
+      activeProfile.targetLang,
+      15,
+    );
+    if (dueIds.length === 0) {
+      setAdultDueQueueIds(null);
+      setActiveAdultModuleId(ADULT_MODULES[0]?.id ?? 'daily_fluency');
+      setView('adult-practice');
+      return;
+    }
+    setAdultDueQueueIds(dueIds);
+    setView('adult-practice');
+  }, [activeProfile.cards, activeProfile.soundFxEnabled, activeProfile.targetLang]);
 
   const handleRecordReview = useCallback(
     (itemId: string, grade: FSRSGrade, speakingDone: boolean, elapsedSec: number) => {
@@ -280,6 +412,11 @@ export function App() {
     updateActiveProfile((prev) => ({ ...prev, soundFxEnabled: !prev.soundFxEnabled }));
   }, [updateActiveProfile]);
 
+  const toggleSlowSpeech = useCallback(() => {
+    audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+    updateActiveProfile((prev) => ({ ...prev, speechSlowMode: !prev.speechSlowMode }));
+  }, [activeProfile.soundFxEnabled, updateActiveProfile]);
+
   const awakeCount = useMemo(() => {
     const prefix = `${activeProfile.targetLang}:`;
     return Object.entries(activeProfile.cards).filter(
@@ -292,6 +429,22 @@ export function App() {
     () => getAdultModuleById(activeAdultModuleId) ?? ADULT_MODULES[0],
     [activeAdultModuleId],
   );
+
+  const adultPracticeModule: AdultModule = useMemo(() => {
+    if (adultDueQueueIds && adultDueQueueIds.length > 0) {
+      return {
+        id: 'fsrs_daily_due',
+        order: 0,
+        titleTr: 'FSRS-5 Günlük Tekrar Kuyruğu',
+        subtitleTr: 'Tüm modüllerden bugün tekrar zamanı gelen kartlar',
+        icon: '⚡',
+        cefrRange: 'A2–B2',
+        accentHex: '#38bdf8',
+        items: ALL_ADULT_ITEMS,
+      };
+    }
+    return activeAdultModule;
+  }, [adultDueQueueIds, activeAdultModule]);
 
   const langMeta = LANGUAGE_META[activeProfile.targetLang];
   const ageBadge = AGE_BADGE[activeProfile.ageMode];
@@ -444,6 +597,31 @@ export function App() {
 
           <button
             type="button"
+            className={`ln-icon-btn ${activeProfile.speechSlowMode ? 'is-active' : ''}`}
+            onClick={toggleSlowSpeech}
+            aria-pressed={activeProfile.speechSlowMode}
+            title={
+              activeProfile.speechSlowMode
+                ? 'Yavaş konuşma açık (0.80x) — Normal hıza geç'
+                : 'Normal konuşma (1.0x) — Yavaş moda geç (0.80x)'
+            }
+            aria-label="Konuşma hızı (0.80x yavaş / normal)"
+            style={
+              activeProfile.speechSlowMode
+                ? {
+                    borderColor: '#10b981',
+                    background: isMaster ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7',
+                  }
+                : undefined
+            }
+          >
+            <span aria-hidden="true" style={{ fontSize: '1.05rem', lineHeight: 1 }}>
+              🐢
+            </span>
+          </button>
+
+          <button
+            type="button"
             className="ln-icon-btn"
             onClick={toggleSoundFx}
             title={activeProfile.soundFxEnabled ? 'Efekt seslerini kapat' : 'Efekt seslerini aç'}
@@ -482,6 +660,7 @@ export function App() {
             currentMode={activeProfile.ageMode}
             onSelectMode={handleSelectAgeMode}
             onRequestParentGate={() => setShowParentModal(true)}
+            onRegisterSubBack={handleRegisterSwitcherBack}
           />
         </div>
       )}
@@ -495,18 +674,23 @@ export function App() {
             profile={activeProfile}
             languageNameTr={langMeta.nameTr}
             onStartModule={handleStartAdultModule}
+            onStartDueQueue={handleStartAdultDueQueue}
             onOpenDialogues={() => setView('adult-dialogues')}
             onOpenPhonetics={() => setView('phonetics')}
             onOpenParentStats={() => setShowParentModal(true)}
           />
         )}
 
-        {isMaster && view === 'adult-practice' && activeAdultModule && (
+        {isMaster && view === 'adult-practice' && adultPracticeModule && (
           <AdultPracticeView
-            module={activeAdultModule}
+            module={adultPracticeModule}
             profile={activeProfile}
+            dueOnlyItemIds={adultDueQueueIds ?? undefined}
             onRecordReview={handleRecordReview}
-            onExit={() => setView('worlds')}
+            onExit={() => {
+              setAdultDueQueueIds(null);
+              setView('worlds');
+            }}
           />
         )}
 
@@ -516,6 +700,7 @@ export function App() {
             profile={activeProfile}
             onCompleteDialogue={handleCompleteStory}
             onBack={() => setView('worlds')}
+            onRegisterSubBack={handleRegisterViewSubBack}
           />
         )}
 
@@ -558,6 +743,7 @@ export function App() {
             profile={activeProfile}
             onCompleteStory={handleCompleteStory}
             onBack={() => setView('worlds')}
+            onRegisterSubBack={handleRegisterViewSubBack}
           />
         )}
 
@@ -692,13 +878,19 @@ export function App() {
           vault={vault}
           activeProfile={activeProfile}
           worlds={WORLDS}
+          adultModules={ADULT_MODULES}
           onClose={() => setShowParentModal(false)}
           onUpdateProfile={handleUpdateProfileObject}
+          onChangeAgeMode={handleSelectAgeMode}
           onSwitchProfile={handleSwitchProfile}
           onCreateProfile={handleCreateProfile}
+          onDeleteProfile={handleDeleteProfile}
+          onImportVault={handleImportVault}
           onEraseAll={handleEraseAll}
         />
       )}
+
+      {!vault.onboardingDone && <OnboardingModal onComplete={handleCompleteOnboarding} />}
     </div>
   );
 }

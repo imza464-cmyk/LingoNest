@@ -167,13 +167,14 @@ def collect_jobs(data: dict) -> list:
             for lang in ("en", "de", "es"):
                 add(lang, "warm", line["text"][lang])
 
-    # 4. 6 Turkish L1 -> English Phonetic Traps & Minimal Pairs
+    # 4. Turkish L1 -> EN/DE/ES Phonetic Traps & Minimal Pairs
     for trap in data["PHONETIC_TRAPS"]:
+        tlang = trap.get("lang") or "en"
         add("tr", "warm", trap["mouthCueTr"])
-        add("en", "warm", trap["practiceSentence"])
+        add(tlang, "warm", trap["practiceSentence"])
         for pair in trap["minimalPairs"]:
-            add("en", "warm", pair["targetWord"])
-            add("en", "warm", pair["contrastWord"])
+            add(tlang, "warm", pair["targetWord"])
+            add(tlang, "warm", pair["contrastWord"])
 
     # 5. Adult 6 Modules x 10 phrases (EN, DE, ES)
     for mod in data["ADULT_MODULES"]:

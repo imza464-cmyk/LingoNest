@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCrossModuleDueQueue,
   buildSessionQueue,
+  cardKey,
   computeItemMasteryPct,
   computeOptimalIntervalDays,
   computeRetrievability,
@@ -11,6 +13,7 @@ import {
   reviewCardFSRS5,
 } from './fsrs5';
 import { hashAudioKey, matchSpokenAttempt, phoneticSkeleton } from './audioEngine';
+import { createDefaultVault, exportVaultJson, importVaultJson } from './storage';
 import { TR_VOICE } from '../data/voiceScripts';
 
 describe('FSRS-5 DSR Mathematical Invariants (kmath verified)', () => {
@@ -95,5 +98,41 @@ describe('Child-Forgiving Turkish-L1 Phonetic Speech Matcher', () => {
   it('matches Python neural audio pack hashes bit-for-bit including Turkish UTF-8', () => {
     expect(hashAudioKey('en', 'warm', 'a cat')).toBe('3670799ccb587ac6');
     expect(hashAudioKey('tr', 'warm', TR_VOICE.welcomeMini)).toBe('67158f8d1954222a');
+  });
+});
+
+describe('Cross-Module Due Queue & Vault Import/Export Integrity', () => {
+  it('returns ONLY due cards across modules ordered by lowest retrievability', () => {
+    const t0 = 1_700_000_000_000;
+    const dueCardEarly = reviewCardFSRS5(undefined, 'item_a', 'en', 2, 'master', t0, true);
+    const dueCardLater = reviewCardFSRS5(undefined, 'item_b', 'en', 3, 'master', t0, true);
+    const notDueCard = reviewCardFSRS5(undefined, 'item_c', 'en', 4, 'master', t0, true);
+
+    const cards = {
+      [cardKey('en', 'item_a')]: dueCardEarly,
+      [cardKey('en', 'item_b')]: dueCardLater,
+      [cardKey('en', 'item_c')]: notDueCard,
+    };
+
+    // 6 days later: for master (R*=0.85), item_a (Hard, interval ~2.1d) & item_b (Good, interval ~5.2d) are due; item_c (Easy, interval ~25.7d) is not due; item_d is unseen
+    const now = t0 + 6 * MS_PER_DAY;
+    const queue = buildCrossModuleDueQueue(['item_a', 'item_b', 'item_c', 'item_d'], cards, 'en', 15, now);
+    expect(queue).toEqual(['item_a', 'item_b']);
+    expect(queue).not.toContain('item_c');
+    expect(queue).not.toContain('item_d');
+  });
+
+  it('validates exported vault backups cleanly and rejects malformed payloads', () => {
+    const vault = createDefaultVault(true);
+    const exported = exportVaultJson(vault);
+    const restored = importVaultJson(exported);
+    expect(restored.ok).toBe(true);
+    if (restored.ok) {
+      expect(restored.vault.profiles).toHaveLength(vault.profiles.length);
+      expect(restored.vault.onboardingDone).toBe(true);
+    }
+
+    expect(importVaultJson('not-valid-json').ok).toBe(false);
+    expect(importVaultJson(JSON.stringify({ profiles: [] })).ok).toBe(false);
   });
 });

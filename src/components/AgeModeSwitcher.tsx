@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Lock, ShieldCheck, X } from 'lucide-react';
 import type { AgeMode } from '../types';
 import { audioEngine } from '../engine/audioEngine';
@@ -7,6 +7,7 @@ export interface AgeModeSwitcherProps {
   currentMode: AgeMode;
   onSelectMode: (mode: AgeMode) => void;
   onRequestParentGate: (targetMode: AgeMode) => void;
+  onRegisterSubBack?: (fn: (() => boolean) | null) => void;
 }
 
 interface ModePillMeta {
@@ -56,10 +57,27 @@ export function AgeModeSwitcher({
   currentMode,
   onSelectMode,
   onRequestParentGate,
+  onRegisterSubBack,
 }: AgeModeSwitcherProps) {
   const [pendingTarget, setPendingTarget] = useState<AgeMode | null>(null);
   const [challengeIdx, setChallengeIdx] = useState(0);
   const [gateNudged, setGateNudged] = useState(false);
+
+  useEffect(() => {
+    if (!onRegisterSubBack) return undefined;
+    if (currentMode === 'mini' && pendingTarget !== null) {
+      onRegisterSubBack(() => {
+        setPendingTarget(null);
+        setGateNudged(false);
+        return true;
+      });
+    } else {
+      onRegisterSubBack(null);
+    }
+    return () => {
+      onRegisterSubBack(null);
+    };
+  }, [currentMode, onRegisterSubBack, pendingTarget]);
 
   const activeChallenge = GATE_CHALLENGES[challengeIdx % GATE_CHALLENGES.length];
 

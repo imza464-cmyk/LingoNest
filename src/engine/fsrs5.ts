@@ -319,3 +319,26 @@ export function buildSessionQueue(
   }
   return picked;
 }
+
+/**
+ * Cross-module strict FSRS-5 due-only queue for Adult Master Daily Reviews:
+ * Returns ONLY cards whose dueAt <= nowMs across ALL modules, sorted by lowest Retrievability first!
+ */
+export function buildCrossModuleDueQueue(
+  allItemIds: string[],
+  cards: Record<string, FSRSCardState>,
+  lang: LanguageCode,
+  maxItems = 15,
+  nowMs: number = Date.now(),
+): string[] {
+  const due: Array<{ id: string; r: number }> = [];
+  for (const id of allItemIds) {
+    const c = cards[cardKey(lang, id)];
+    if (c && c.reps > 0 && c.dueAt <= nowMs) {
+      const elapsed = Math.max(0, (nowMs - c.lastReviewAt) / MS_PER_DAY);
+      due.push({ id, r: computeRetrievability(elapsed, c.stability) });
+    }
+  }
+  due.sort((a, b) => a.r - b.r);
+  return due.slice(0, maxItems).map((d) => d.id);
+}

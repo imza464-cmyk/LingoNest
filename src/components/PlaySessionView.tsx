@@ -58,6 +58,11 @@ interface SvoBlock {
   text: string;
 }
 
+interface MemoryCard {
+  uid: string;
+  item: VocabItem;
+}
+
 function shuffleArray<T>(items: T[]): T[] {
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -152,6 +157,12 @@ export function PlaySessionView({
     setExplorerTextRevealed(false);
     setExplorerAudioPlayed(false);
     setTprSpoken(false);
+    advancingRef.current = false;
+    memoryLockRef.current = false;
+    setMemoryCards([]);
+    setFlippedUids([]);
+    setMatchedItemIds([]);
+    setMismatchUids([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionKey]);
 
@@ -175,8 +186,12 @@ export function PlaySessionView({
   const [mascotMood, setMascotMood] = useState<MascotMood>('idle');
   const [mascotBubble, setMascotBubble] = useState<string | undefined>(undefined);
 
-  // Stage 2 (listen_pick) state
+  // Stage 2 (listen_pick & Mini Memory Pairs) state
   const [choices, setChoices] = useState<VocabItem[]>([]);
+  const [memoryCards, setMemoryCards] = useState<MemoryCard[]>([]);
+  const [flippedUids, setFlippedUids] = useState<string[]>([]);
+  const [matchedItemIds, setMatchedItemIds] = useState<string[]>([]);
+  const [mismatchUids, setMismatchUids] = useState<string[]>([]);
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [hintUsed, setHintUsed] = useState(false);
   const [nudgedIds, setNudgedIds] = useState<string[]>([]);
@@ -200,6 +215,8 @@ export function PlaySessionView({
   const itemStartMsRef = useRef<number>(Date.now());
   const stage2StartMsRef = useRef<number>(Date.now());
   const discoverStartMsRef = useRef<number>(Date.now());
+  const advancingRef = useRef<boolean>(false);
+  const memoryLockRef = useRef<boolean>(false);
   const timerRef = useRef<number | null>(null);
   const revealTimerRef = useRef<number | null>(null);
 
@@ -231,6 +248,7 @@ export function PlaySessionView({
   const isMasteredCard = Boolean(
     existingCard && existingCard.reps >= 2 && existingCard.lastGrade >= 3,
   );
+  const isMemoryGame = isMini && currentIdx % 2 === 1;
 
   const speakNative = useCallback(
     (text: string, slowOverride?: boolean, onAudioComplete?: () => void) => {
@@ -296,6 +314,22 @@ export function PlaySessionView({
     [allVocab, world.items],
   );
 
+  const buildMemoryDeck = useCallback(
+    (target: VocabItem): MemoryCard[] => {
+      const worldPool = world.items.filter((v) => v.id !== target.id);
+      const fallbackPool = allVocab.filter((v) => v.id !== target.id);
+      const partner =
+        shuffleArray(worldPool)[0] ?? shuffleArray(fallbackPool)[0] ?? target;
+      return shuffleArray<MemoryCard>([
+        { uid: `m-0-${target.id}`, item: target },
+        { uid: `m-1-${target.id}`, item: target },
+        { uid: `m-2-${partner.id}`, item: partner },
+        { uid: `m-3-${partner.id}`, item: partner },
+      ]);
+    },
+    [allVocab, world.items],
+  );
+
   // Initialize stage transitions & auto-play natural audio
   useEffect(() => {
     if (sessionComplete || !currentItem || !phrase) return;
@@ -303,6 +337,8 @@ export function PlaySessionView({
     audioEngine.stopListening();
 
     if (stage === 'discover') {
+      advancingRef.current = false;
+      memoryLockRef.current = false;
       itemStartMsRef.current = Date.now();
       discoverStartMsRef.current = Date.now();
       setExplorerTextRevealed(false);
@@ -380,8 +416,16 @@ export function PlaySessionView({
         );
       }
     } else if (stage === 'listen_pick') {
-      const choiceCount = isMini ? 3 : 4;
-      setChoices(buildChoices(currentItem, choiceCount));
+      memoryLockRef.current = false;
+      setFlippedUids([]);
+      setMatchedItemIds([]);
+      setMismatchUids([]);
+      if (isMemoryGame) {
+        setMemoryCards(buildMemoryDeck(currentItem));
+      } else {
+        const choiceCount = isMini ? 3 : 4;
+        setChoices(buildChoices(currentItem, choiceCount));
+      }
       setWrongAttempts(0);
       setHintUsed(false);
       setNudgedIds([]);
@@ -392,11 +436,15 @@ export function PlaySessionView({
       const promptText = isMasteredCard ? phrase.microSentence : phrase.word;
       setMascotMood('idle');
       setMascotBubble(
-        isMini
-          ? 'Hangisi? Dinle ve dokun! 👆'
-          : isExplorer
-            ? '4 seçenek arasından duyduğunu yakala! ⚡'
-            : 'Duyduğun kelimeye karşılık gelen kartı seç!',
+        isMemoryGame
+          ? 'Eşini Bul! Kartlara dokun ve eşleri yakala! 🃏'
+          : isMasteredCard
+            ? 'Duyduğun cümleye uygun kartı seç!'
+            : isMini
+              ? 'Hangisi? Dinle ve dokun! 👆'
+              : isExplorer
+                ? '4 seçenek arasından duyduğunu yakala! ⚡'
+                : 'Duyduğun kelimeye karşılık gelen kartı seç!',
       );
       speakNative(promptText);
     } else if (stage === 'echo_speak') {
@@ -442,10 +490,12 @@ export function PlaySessionView({
     }
   }, [
     buildChoices,
+    buildMemoryDeck,
     clearTimer,
     currentItem,
     isExplorer,
     isMasteredCard,
+    isMemoryGame,
     isMini,
     phrase,
     profile.ageMode,
@@ -458,7 +508,8 @@ export function PlaySessionView({
 
   const commitItemAndAdvance = useCallback(
     (finalSpeakingDone: boolean) => {
-      if (!currentItem) return;
+      if (!currentItem || advancingRef.current) return;
+      advancingRef.current = true;
       clearTimer();
       audioEngine.stopSpeaking();
       audioEngine.stopListening();
@@ -497,37 +548,17 @@ export function PlaySessionView({
     ],
   );
 
-  // Stage 2 handler
-  const handleChoicePick = (choice: VocabItem) => {
-    if (!currentItem || !phrase || stage2Solved) return;
-
-    if (choice.id === currentItem.id) {
-      const rtMs = Math.max(200, Date.now() - stage2StartMsRef.current);
-      const grade = inferImplicitGrade({
-        wrongAttempts,
-        reactionTimeMs: rtMs,
-        hintUsed,
-        ageMode: profile.ageMode,
-      });
-
-      let nextCombo = comboStreak;
-      if (isExplorer) {
-        nextCombo = wrongAttempts === 0 ? comboStreak + 1 : 0;
-        setComboStreak(nextCombo);
-        setXpEarned((xp) => xp + (wrongAttempts === 0 ? 15 + nextCombo * 5 : 5));
-      }
-
+  const completeStage2WithCelebration = useCallback(
+    (grade: FSRSGrade, bubbleOverride?: string) => {
+      if (!phrase) return;
       audioEngine.playChime('success', profile.soundFxEnabled);
       setComputedGrade(grade);
       setStage2Solved(true);
       setShowConfetti(true);
       setMascotMood('celebrating');
       setMascotBubble(
-        isExplorer && nextCombo >= 2
-          ? `🔥 x${nextCombo} Kombo! Süper gidiyorsun! ⚡`
-          : grade === 4
-            ? 'Şimşek gibi bildin! 🌟⚡'
-            : 'Harika! İşte bu! 🌟',
+        bubbleOverride ??
+          (grade === 4 ? 'Şimşek gibi bildin! 🌟⚡' : 'Harika! İşte bu! 🌟'),
       );
 
       const solvedAt = Date.now();
@@ -558,6 +589,36 @@ export function PlaySessionView({
           },
         },
       );
+    },
+    [clearTimer, phrase, profile.soundFxEnabled, profile.speechSlowMode, profile.targetLang],
+  );
+
+  // Stage 2 handler
+  const handleChoicePick = (choice: VocabItem) => {
+    if (!currentItem || !phrase || stage2Solved) return;
+
+    if (choice.id === currentItem.id) {
+      const rtMs = Math.max(200, Date.now() - stage2StartMsRef.current);
+      const grade = inferImplicitGrade({
+        wrongAttempts,
+        reactionTimeMs: rtMs,
+        hintUsed,
+        ageMode: profile.ageMode,
+      });
+
+      let nextCombo = comboStreak;
+      if (isExplorer) {
+        nextCombo = wrongAttempts === 0 ? comboStreak + 1 : 0;
+        setComboStreak(nextCombo);
+        setXpEarned((xp) => xp + (wrongAttempts === 0 ? 15 + nextCombo * 5 : 5));
+      }
+
+      completeStage2WithCelebration(
+        grade,
+        isExplorer && nextCombo >= 2
+          ? `🔥 x${nextCombo} Kombo! Süper gidiyorsun! ⚡`
+          : undefined,
+      );
     } else {
       // Zero-shame gentle nudge: warm peach wiggle + slow audio replay
       audioEngine.playChime('gentle-nudge', profile.soundFxEnabled);
@@ -569,11 +630,12 @@ export function PlaySessionView({
       setNudgedIds((prev) => (prev.includes(choice.id) ? prev : [...prev, choice.id]));
       setMascotMood('encouraging');
       setMascotBubble('Yaklaştın! Haydi yavaşça tekrar dinleyelim 💛');
+      const replayPrompt = isMasteredCard ? phrase.microSentence : phrase.word;
       audioEngine.speakSequence(
         [
           { text: pickRandomNudge(), lang: 'tr' },
           {
-            text: phrase.word,
+            text: replayPrompt,
             lang: profile.targetLang,
             slow: true,
             role: 'warm',
@@ -595,6 +657,86 @@ export function PlaySessionView({
     }
   };
 
+  // Stage 2 Mini Memory Pairs handler ("Eşini Bul! 🃏")
+  const handleMemoryCardTap = (card: MemoryCard) => {
+    if (!currentItem || !phrase || stage2Solved || memoryLockRef.current) return;
+    if (flippedUids.includes(card.uid) || matchedItemIds.includes(card.item.id)) return;
+
+    const cardPhrase = card.item.langs[profile.targetLang];
+    const speakCardPairAudio = () => {
+      audioEngine.speakSequence(
+        [
+          {
+            text: cardPhrase.word,
+            lang: profile.targetLang,
+            slow: profile.speechSlowMode,
+            role: 'warm',
+          },
+          { text: card.item.turkishMeaning, lang: 'tr' },
+        ],
+        {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => {
+            setIsSpeaking(false);
+            setMascotMood((prev) => (prev === 'speaking' ? 'idle' : prev));
+          },
+        },
+      );
+    };
+
+    if (flippedUids.length === 0) {
+      audioEngine.playChime('tap', profile.soundFxEnabled);
+      setFlippedUids([card.uid]);
+      setMascotMood('idle');
+      setMascotBubble(`${card.item.emoji} ${card.item.turkishMeaning}! Şimdi eşini bul 🃏`);
+      speakCardPairAudio();
+      return;
+    }
+
+    const firstUid = flippedUids[0];
+    const firstCard = memoryCards.find((c) => c.uid === firstUid);
+    const nextFlipped = [firstUid, card.uid];
+    setFlippedUids(nextFlipped);
+
+    if (firstCard && firstCard.item.id === card.item.id) {
+      const nextMatched = [...matchedItemIds, card.item.id];
+      const totalPairs = new Set(memoryCards.map((c) => c.item.id)).size;
+      setMatchedItemIds(nextMatched);
+      setFlippedUids([]);
+
+      if (nextMatched.length >= totalPairs) {
+        const rtMs = Math.max(200, Date.now() - stage2StartMsRef.current);
+        const grade = inferImplicitGrade({
+          wrongAttempts,
+          reactionTimeMs: wrongAttempts === 0 && !hintUsed ? Math.min(rtMs, 5000) : rtMs,
+          hintUsed,
+          ageMode: profile.ageMode,
+        });
+        completeStage2WithCelebration(grade, 'Harika! Tüm eşleri buldun! 🃏🌟');
+      } else {
+        audioEngine.playChime('success', profile.soundFxEnabled);
+        setMascotMood('celebrating');
+        setMascotBubble(`Süper! ${card.item.emoji} çiftini buldun! Diğerini aç 🌟`);
+        speakCardPairAudio();
+      }
+    } else {
+      memoryLockRef.current = true;
+      setWrongAttempts((w) => w + 1);
+      setMismatchUids(nextFlipped);
+      audioEngine.playChime('gentle-nudge', profile.soundFxEnabled);
+      setMascotMood('encouraging');
+      setMascotBubble('Neredeyse oldu! Kartları aklında tut, tekrar dene 💛');
+      speakCardPairAudio();
+
+      clearTimer();
+      timerRef.current = window.setTimeout(() => {
+        setFlippedUids([]);
+        setMismatchUids([]);
+        memoryLockRef.current = false;
+      }, 900);
+    }
+  };
+
   // Stage 3 ASR handler
   const handleToggleListening = () => {
     if (!phrase) return;
@@ -603,6 +745,7 @@ export function PlaySessionView({
       audioEngine.stopListening();
       setSpeechStatus('idle');
       setMascotMood('idle');
+      setMascotBubble('Şimdi sen söyle! 🎤');
       return;
     }
 
@@ -703,9 +846,12 @@ export function PlaySessionView({
 
   const handleMascotTap = () => {
     if (!phrase) return;
+    if (stage === 'listen_pick' && stage2Solved) return;
     audioEngine.playChime('tap', profile.soundFxEnabled);
     if (stage === 'svo_build') {
       speakNative(phrase.microSentence);
+    } else if (stage === 'listen_pick') {
+      speakNative(isMasteredCard ? phrase.microSentence : phrase.word, isMini);
     } else {
       speakNative(phrase.word, isMini);
     }
@@ -961,8 +1107,8 @@ export function PlaySessionView({
                   : speakNative(activePhrase.word)
               }
               style={{
-                width: isMini ? '220px' : '190px',
-                height: isMini ? '220px' : '190px',
+                width: 'clamp(144px, 42vw, 210px)',
+                height: 'clamp(144px, 42vw, 210px)',
                 borderRadius: '36px',
                 backgroundColor: item.bgColor,
                 border: `4px solid ${item.accentColor}`,
@@ -976,7 +1122,14 @@ export function PlaySessionView({
               }}
               aria-label="Sesli kelimeyi dinle"
             >
-              <span style={{ fontSize: isMini ? '6.2rem' : '5.2rem', lineHeight: 1 }}>
+              <span
+                style={{
+                  fontSize: isMini
+                    ? 'clamp(3.8rem, 13vw, 5.8rem)'
+                    : 'clamp(3.4rem, 11vw, 5rem)',
+                  lineHeight: 1,
+                }}
+              >
                 {item.emoji}
               </span>
             </button>
@@ -1131,7 +1284,7 @@ export function PlaySessionView({
               <Volume2 size={18} />
             </button>
 
-            {/* Speaker Replay Row: Normal + Turtle 0.78x */}
+            {/* Speaker Replay Row: Normal + Turtle 0.80x */}
             <div className="ln-chip-group" style={{ justifyContent: 'center' }}>
               <button
                 type="button"
@@ -1154,7 +1307,7 @@ export function PlaySessionView({
                     ? triggerExplorerAudioAndReveal(activePhrase.word, true)
                     : speakNative(activePhrase.word, true)
                 }
-                title="0.78x Kaplumbağa Hızı"
+                title="0.80x Kaplumbağa Hızı"
               >
                 <span style={{ fontSize: '1.45rem' }} aria-hidden="true">
                   🐢
@@ -1178,7 +1331,7 @@ export function PlaySessionView({
         )}
 
         {/* ================================================================
-            STAGE 2: LISTEN & PICK (Mini: 3 Toy Cards | Explorer: 4 Cards + Combo XP)
+            STAGE 2: LISTEN & PICK (Mini: 3 Toy Cards or 4-Card Memory | Explorer: 4 Cards)
            ================================================================ */}
         {stage === 'listen_pick' && (
           <div
@@ -1202,6 +1355,7 @@ export function PlaySessionView({
             <div className="ln-chip-group" style={{ justifyContent: 'center' }}>
               <button
                 type="button"
+                disabled={stage2Solved}
                 className="ln-clay-btn ln-touch-xl"
                 onClick={() =>
                   speakNative(
@@ -1216,6 +1370,7 @@ export function PlaySessionView({
 
               <button
                 type="button"
+                disabled={stage2Solved}
                 className="ln-clay-btn ln-clay-btn--gold ln-touch-xl"
                 onClick={() =>
                   speakNative(
@@ -1227,20 +1382,24 @@ export function PlaySessionView({
                 <span style={{ fontSize: '1.45rem' }} aria-hidden="true">
                   🐢
                 </span>
-                <span>Yavaş (0.78x)</span>
+                <span>Yavaş (0.80x)</span>
               </button>
 
               <button
                 type="button"
+                disabled={stage2Solved}
                 className="ln-clay-btn ln-clay-btn--soft"
                 onClick={() => {
                   setHintUsed(true);
                   audioEngine.playChime('tap', profile.soundFxEnabled);
+                  const hintTargetText = isMasteredCard
+                    ? activePhrase.microSentence
+                    : activePhrase.word;
                   audioEngine.speakSequence([
                     { text: item.turkishMeaning, lang: 'tr' },
                     { text: item.tprActionTr, lang: 'tr' },
                     {
-                      text: activePhrase.word,
+                      text: hintTargetText,
                       lang: profile.targetLang,
                       slow: true,
                       role: 'warm',
@@ -1255,47 +1414,158 @@ export function PlaySessionView({
               </button>
             </div>
 
-            {/* Mini: Max 3 Giant Toy Cards | Explorer & Master: 4-Choice 2x2 Grid */}
-            <div className={`ln-choices-grid ${!isMini ? 'ln-choices-grid--4' : ''}`}>
-              {choices.slice(0, isMini ? 3 : 4).map((choice) => {
-                const isWiggling = wigglingChoiceId === choice.id;
-                const isNudged = nudgedIds.includes(choice.id);
-                const isWinner = stage2Solved && choice.id === item.id;
+            {isMemoryGame ? (
+              <>
+                <div
+                  className="ln-chip-btn"
+                  style={{
+                    background: '#f5f3ff',
+                    borderColor: '#a78bfa',
+                    color: '#4c1d95',
+                    fontWeight: 900,
+                  }}
+                >
+                  🃏 Eşini Bul! ({matchedItemIds.length} /{' '}
+                  {Math.max(1, new Set(memoryCards.map((c) => c.item.id)).size)} Çift)
+                </div>
 
-                return (
-                  <button
-                    key={choice.id}
-                    type="button"
-                    disabled={stage2Solved}
-                    className={`ln-choice-tile ${isWiggling ? 'is-nudge animate-gentle-wiggle' : ''} ${isNudged && !isWiggling ? 'is-nudge' : ''} ${isWinner ? 'is-correct' : ''}`}
-                    style={{
-                      backgroundColor: isWinner || isNudged ? undefined : choice.bgColor,
-                      borderColor: isWinner
-                        ? '#10b981'
-                        : isNudged
-                          ? '#fdba74'
-                          : choice.accentColor,
-                      minHeight: isMini ? '176px' : '148px',
-                    }}
-                    onClick={() => handleChoicePick(choice)}
-                    aria-label={isMini ? `Seçenek ${choice.emoji}` : choice.turkishMeaning}
-                  >
-                    <span style={{ fontSize: isMini ? '4.8rem' : '4rem', lineHeight: 1 }}>
-                      {choice.emoji}
-                    </span>
+                <div className="ln-choices-grid ln-choices-grid--4">
+                  {memoryCards.map((card) => {
+                    const isMatched = matchedItemIds.includes(card.item.id);
+                    const isFlipped = flippedUids.includes(card.uid);
+                    const isMismatch = mismatchUids.includes(card.uid);
+                    const isFaceUp = isMatched || isFlipped || stage2Solved;
 
-                    {/* Reveal Turkish meaning + target word once solved so learner locks meaning <-> sound */}
-                    {stage2Solved && (
-                      <span style={{ fontWeight: 800, color: '#172554', textAlign: 'center', fontSize: isMini ? '0.95rem' : '0.9rem' }}>
-                        {isMini
-                          ? `🇹🇷 ${choice.turkishMeaning}`
-                          : `${choice.langs[profile.targetLang].word} • 🇹🇷 ${choice.turkishMeaning}`}
+                    return (
+                      <button
+                        key={card.uid}
+                        type="button"
+                        disabled={stage2Solved || isMatched || isFlipped}
+                        className={`ln-choice-tile ${isMismatch ? 'is-nudge animate-gentle-wiggle' : ''} ${isMatched ? 'is-correct' : ''}`}
+                        style={{
+                          background: isFaceUp
+                            ? undefined
+                            : 'linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%)',
+                          backgroundColor:
+                            isFaceUp && !isMatched && !isMismatch
+                              ? card.item.bgColor
+                              : undefined,
+                          borderColor: !isFaceUp
+                            ? '#38bdf8'
+                            : isMatched
+                              ? '#10b981'
+                              : isMismatch
+                                ? '#fdba74'
+                                : card.item.accentColor,
+                          boxShadow: !isFaceUp
+                            ? '0 8px 0 #7dd3fc, 0 0 20px rgba(56, 189, 248, 0.34)'
+                            : undefined,
+                          minHeight: 'clamp(118px, 28vw, 172px)',
+                        }}
+                        onClick={() => handleMemoryCardTap(card)}
+                        aria-label={isFaceUp ? card.item.turkishMeaning : 'Kapalı gizem kartı'}
+                      >
+                        {isFaceUp ? (
+                          <>
+                            <span
+                              style={{
+                                fontSize: 'clamp(3.1rem, 10vw, 4.8rem)',
+                                lineHeight: 1,
+                              }}
+                            >
+                              {card.item.emoji}
+                            </span>
+                            {(isMatched || stage2Solved) && (
+                              <span
+                                style={{
+                                  fontWeight: 800,
+                                  color: '#172554',
+                                  textAlign: 'center',
+                                  fontSize: '0.92rem',
+                                }}
+                              >
+                                🇹🇷 {card.item.turkishMeaning}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span
+                              style={{
+                                fontSize: 'clamp(2.8rem, 9vw, 4.2rem)',
+                                lineHeight: 1,
+                              }}
+                              aria-hidden="true"
+                            >
+                              🃏
+                            </span>
+                            <span style={{ fontSize: '1.1rem', opacity: 0.85 }} aria-hidden="true">
+                              ✨
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              /* Mini: Max 3 Giant Toy Cards | Explorer & Master: 4-Choice 2x2 Grid */
+              <div className={`ln-choices-grid ${!isMini ? 'ln-choices-grid--4' : ''}`}>
+                {choices.slice(0, isMini ? 3 : 4).map((choice) => {
+                  const isWiggling = wigglingChoiceId === choice.id;
+                  const isNudged = nudgedIds.includes(choice.id);
+                  const isWinner = stage2Solved && choice.id === item.id;
+
+                  return (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      disabled={stage2Solved}
+                      className={`ln-choice-tile ${isWiggling ? 'is-nudge animate-gentle-wiggle' : ''} ${isNudged && !isWiggling ? 'is-nudge' : ''} ${isWinner ? 'is-correct' : ''}`}
+                      style={{
+                        backgroundColor: isWinner || isNudged ? undefined : choice.bgColor,
+                        borderColor: isWinner
+                          ? '#10b981'
+                          : isNudged
+                            ? '#fdba74'
+                            : choice.accentColor,
+                        minHeight: 'clamp(118px, 28vw, 172px)',
+                      }}
+                      onClick={() => handleChoicePick(choice)}
+                      aria-label={isMini ? `Seçenek ${choice.emoji}` : choice.turkishMeaning}
+                    >
+                      <span
+                        style={{
+                          fontSize: isMini
+                            ? 'clamp(3.1rem, 10vw, 4.8rem)'
+                            : 'clamp(2.8rem, 9vw, 4rem)',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {choice.emoji}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+
+                      {/* Reveal Turkish meaning + target word once solved so learner locks meaning <-> sound */}
+                      {stage2Solved && (
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            color: '#172554',
+                            textAlign: 'center',
+                            fontSize: isMini ? '0.95rem' : '0.9rem',
+                          }}
+                        >
+                          {isMini
+                            ? `🇹🇷 ${choice.turkishMeaning}`
+                            : `${choice.langs[profile.targetLang].word} • 🇹🇷 ${choice.turkishMeaning}`}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Master Mode FSRS-5 Telemetry Badge */}
             {isMaster && (
@@ -1357,14 +1627,14 @@ export function PlaySessionView({
           >
             <div
               style={{
-                width: isMini ? '170px' : '150px',
-                height: isMini ? '170px' : '150px',
+                width: 'clamp(118px, 32vw, 168px)',
+                height: 'clamp(118px, 32vw, 168px)',
                 borderRadius: '32px',
                 backgroundColor: item.bgColor,
                 border: `4px solid ${item.accentColor}`,
                 display: 'grid',
                 placeItems: 'center',
-                fontSize: isMini ? '5rem' : '4.2rem',
+                fontSize: 'clamp(3.1rem, 10vw, 4.8rem)',
               }}
             >
               {item.emoji}
