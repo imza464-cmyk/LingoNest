@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BarChart3,
   BookOpen,
   Cloud,
   Ear,
   Globe,
   Home,
+  Layers,
   MessageSquare,
   ShieldCheck,
   Sparkles,
@@ -58,6 +58,8 @@ import { AdultStudioView } from './components/AdultStudioView';
 import { AdultPracticeView } from './components/AdultPracticeView';
 import { AdultDialogueView } from './components/AdultDialogueView';
 import { GrammarHandbookView } from './components/GrammarHandbookView';
+import { VocabBankView } from './components/VocabBankView';
+import { GradedStoriesView } from './components/GradedStoriesView';
 import { ParentDashboardModal } from './components/ParentDashboardModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { CloudAccountModal } from './components/CloudAccountModal';
@@ -176,6 +178,10 @@ export function App() {
         const ch = raw.split('/')[1];
         if (ch) setHandbookChapterId(ch);
         setView('handbook');
+      } else if (raw === 'kelimeler') {
+        setView('vocab');
+      } else if (raw === 'okuma') {
+        setView('graded-stories');
       } else if (raw === 'diyalog') {
         setView('adult-dialogues');
       } else if (raw === 'fonetik') {
@@ -198,6 +204,10 @@ export function App() {
     let targetHash = '';
     if (view === 'handbook') {
       targetHash = handbookChapterId ? `#rehber/${handbookChapterId}` : '#rehber';
+    } else if (view === 'vocab') {
+      targetHash = '#kelimeler';
+    } else if (view === 'graded-stories') {
+      targetHash = '#okuma';
     } else if (view === 'adult-dialogues') {
       targetHash = '#diyalog';
     } else if (view === 'phonetics') {
@@ -607,6 +617,18 @@ export function App() {
 
             <button
               type="button"
+              className={`ln-nav-pill ${view === 'vocab' ? 'active' : ''}`}
+              onClick={() => {
+                audioEngine.stopSpeaking();
+                setView('vocab');
+              }}
+            >
+              <Layers size={17} />
+              <span>Kelimeler</span>
+            </button>
+
+            <button
+              type="button"
               className={`ln-nav-pill ${view === 'handbook' ? 'active' : ''}`}
               onClick={() => {
                 audioEngine.stopSpeaking();
@@ -614,7 +636,19 @@ export function App() {
               }}
             >
               <BookOpen size={17} />
-              <span>Dilbilgisi Rehberi</span>
+              <span>Dilbilgisi</span>
+            </button>
+
+            <button
+              type="button"
+              className={`ln-nav-pill ${view === 'graded-stories' ? 'active' : ''}`}
+              onClick={() => {
+                audioEngine.stopSpeaking();
+                setView('graded-stories');
+              }}
+            >
+              <BookOpen size={17} />
+              <span>Hikayeler</span>
             </button>
 
             <button
@@ -640,15 +674,6 @@ export function App() {
               <Ear size={17} />
               <span>Telaffuz</span>
             </button>
-
-            <button
-              type="button"
-              className="ln-nav-pill"
-              onClick={() => setShowParentModal(true)}
-            >
-              <BarChart3 size={17} />
-              <span>İlerleme</span>
-            </button>
           </nav>
         ) : (
           <nav className="ln-nav-pills" aria-label="Ana Gezinme">
@@ -665,27 +690,59 @@ export function App() {
               <span>{isMini ? 'Oyun' : 'Görevler'}</span>
             </button>
 
-            <button
-              type="button"
-              className={`ln-nav-pill ${view === 'living-world' ? 'active' : ''}`}
-              onClick={() => {
-                audioEngine.stopSpeaking();
-                audioEngine.playChime('tap', activeProfile.soundFxEnabled);
-                setView('living-world');
-              }}
-            >
-              <Sparkles size={isMini ? 24 : 18} />
-              <span>{isMini ? 'Bahçem' : 'Yaşayan Dünya'}</span>
-              {awakeCount > 0 && <em className="ln-pill-badge">{awakeCount}</em>}
-            </button>
+            {!isMini && (
+              <>
+                <button
+                  type="button"
+                  className={`ln-nav-pill ${view === 'vocab' ? 'active' : ''}`}
+                  onClick={() => {
+                    audioEngine.stopSpeaking();
+                    audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                    setView('vocab');
+                  }}
+                >
+                  <Layers size={18} />
+                  <span>Kelimeler</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`ln-nav-pill ${view === 'handbook' ? 'active' : ''}`}
+                  onClick={() => {
+                    audioEngine.stopSpeaking();
+                    audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                    setView('handbook');
+                  }}
+                >
+                  <BookOpen size={18} />
+                  <span>Dilbilgisi</span>
+                </button>
+              </>
+            )}
+
+            {isMini && (
+              <button
+                type="button"
+                className={`ln-nav-pill ${view === 'living-world' ? 'active' : ''}`}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+                  setView('living-world');
+                }}
+              >
+                <Sparkles size={24} />
+                <span>Bahçem</span>
+                {awakeCount > 0 && <em className="ln-pill-badge">{awakeCount}</em>}
+              </button>
+            )}
 
             <button
               type="button"
-              className={`ln-nav-pill ${view === 'stories' ? 'active' : ''}`}
+              className={`ln-nav-pill ${view === 'stories' || view === 'graded-stories' ? 'active' : ''}`}
               onClick={() => {
                 audioEngine.stopSpeaking();
                 audioEngine.playChime('tap', activeProfile.soundFxEnabled);
-                setView('stories');
+                setView(isMini ? 'stories' : 'graded-stories');
               }}
             >
               <BookOpen size={isMini ? 24 : 18} />
@@ -702,7 +759,7 @@ export function App() {
               }}
             >
               <Ear size={isMini ? 24 : 18} />
-              <span>{isMini ? 'Sesler' : 'Ses Lab'}</span>
+              <span>{isMini ? 'Sesler' : 'Telaffuz'}</span>
             </button>
           </nav>
         )}
@@ -813,6 +870,8 @@ export function App() {
             onStartDueQueue={handleStartAdultDueQueue}
             onOpenDialogues={() => setView('adult-dialogues')}
             onOpenHandbook={() => setView('handbook')}
+            onOpenVocab={() => setView('vocab')}
+            onOpenStories={() => setView('graded-stories')}
             onOpenPhonetics={() => setView('phonetics')}
             onOpenParentStats={() => setShowParentModal(true)}
           />
@@ -824,6 +883,25 @@ export function App() {
             languageNameTr={langMeta.nameTr}
             initialChapterId={handbookChapterId}
             onChapterSelect={(id) => setHandbookChapterId(id)}
+            onBack={() => setView('worlds')}
+          />
+        )}
+
+        {view === 'vocab' && (
+          <VocabBankView
+            profile={activeProfile}
+            languageNameTr={langMeta.nameTr}
+            onRecordReview={handleRecordReview}
+            onBack={() => setView('worlds')}
+          />
+        )}
+
+        {view === 'graded-stories' && (
+          <GradedStoriesView
+            profile={activeProfile}
+            languageNameTr={langMeta.nameTr}
+            onCompleteStory={handleCompleteStory}
+            onOpenIllustratedStories={!isMaster ? () => setView('stories') : undefined}
             onBack={() => setView('worlds')}
           />
         )}
@@ -859,8 +937,10 @@ export function App() {
             languageNameTr={langMeta.nameTr}
             onStartWorld={handleStartWorld}
             onOpenLivingWorld={() => setView('living-world')}
-            onOpenStories={() => setView('stories')}
+            onOpenStories={() => setView(isMini ? 'stories' : 'graded-stories')}
             onOpenPhonetics={() => setView('phonetics')}
+            onOpenVocab={!isMini ? () => setView('vocab') : undefined}
+            onOpenHandbook={!isMini ? () => setView('handbook') : undefined}
           />
         )}
 
@@ -924,6 +1004,19 @@ export function App() {
 
               <button
                 type="button"
+                className={`ln-mobile-nav-item ${view === 'vocab' ? 'active' : ''}`}
+                aria-current={view === 'vocab' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  setView('vocab');
+                }}
+              >
+                <Layers size={20} aria-hidden="true" />
+                <span>Kelime</span>
+              </button>
+
+              <button
+                type="button"
                 className={`ln-mobile-nav-item ${view === 'handbook' ? 'active' : ''}`}
                 aria-current={view === 'handbook' ? 'page' : undefined}
                 onClick={() => {
@@ -932,33 +1025,20 @@ export function App() {
                 }}
               >
                 <BookOpen size={20} aria-hidden="true" />
-                <span>Rehber</span>
+                <span>Dilbilgisi</span>
               </button>
 
               <button
                 type="button"
-                className={`ln-mobile-nav-item ${view === 'adult-dialogues' ? 'active' : ''}`}
-                aria-current={view === 'adult-dialogues' ? 'page' : undefined}
+                className={`ln-mobile-nav-item ${view === 'graded-stories' ? 'active' : ''}`}
+                aria-current={view === 'graded-stories' ? 'page' : undefined}
                 onClick={() => {
                   audioEngine.stopSpeaking();
-                  setView('adult-dialogues');
+                  setView('graded-stories');
                 }}
               >
                 <MessageSquare size={20} aria-hidden="true" />
-                <span>Diyalog</span>
-              </button>
-
-              <button
-                type="button"
-                className={`ln-mobile-nav-item ${view === 'phonetics' ? 'active' : ''}`}
-                aria-current={view === 'phonetics' ? 'page' : undefined}
-                onClick={() => {
-                  audioEngine.stopSpeaking();
-                  setView('phonetics');
-                }}
-              >
-                <Ear size={20} aria-hidden="true" />
-                <span>Telaffuz</span>
+                <span>Hikayeler</span>
               </button>
             </>
           ) : (

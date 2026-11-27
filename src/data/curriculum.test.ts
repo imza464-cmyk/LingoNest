@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { ALL_VOCAB, LANGUAGE_META, PHONETIC_TRAPS, STORIES, VOCAB_BY_ID, WORLDS } from './curriculum';
 import { ADULT_DIALOGUES, ADULT_ITEM_BY_ID, ADULT_MODULES, ALL_ADULT_ITEMS } from './adultCurriculum';
 import { GRAMMAR_HANDBOOK_CHAPTERS } from './grammarHandbook';
+import { ALL_VOCAB_BANK, VOCAB_CATEGORIES } from './vocabBank';
+import { GRADED_STORIES } from './gradedStories';
 import { createDefaultVault, mergeLingoVaults } from '../engine/storage';
 
 describe('LingoNest Curriculum Data Integrity', () => {
@@ -83,8 +85,8 @@ describe('LingoNest Curriculum Data Integrity', () => {
     }
   });
 
-  it('provides 12 complete trilingual contrastive grammar handbook chapters', () => {
-    expect(GRAMMAR_HANDBOOK_CHAPTERS).toHaveLength(12);
+  it('provides 18 systematic A1-B2 trilingual grammar chapters with reference tables and practice questions', () => {
+    expect(GRAMMAR_HANDBOOK_CHAPTERS).toHaveLength(18);
     const ids = new Set<string>();
     for (const ch of GRAMMAR_HANDBOOK_CHAPTERS) {
       expect(ids.has(ch.id)).toBe(false);
@@ -98,7 +100,19 @@ describe('LingoNest Curriculum Data Integrity', () => {
         expect(comp.naturalForm.length).toBeGreaterThan(3);
         expect(comp.ipa.startsWith('/')).toBe(true);
         expect(comp.structuralWhyTr.length).toBeGreaterThan(15);
+        expect(ch.referenceTables[lang].rows.length).toBeGreaterThanOrEqual(4);
+        expect(ch.practiceQuestions[lang].length).toBeGreaterThanOrEqual(2);
       }
+    }
+  });
+
+  it('provides 240 structured A1-B2 vocabulary concepts across 12 categories and 8 graded short stories', () => {
+    expect(VOCAB_CATEGORIES).toHaveLength(12);
+    expect(ALL_VOCAB_BANK).toHaveLength(240);
+    expect(GRADED_STORIES).toHaveLength(8);
+    for (const st of GRADED_STORIES) {
+      expect(st.paragraphs.length).toBeGreaterThanOrEqual(5);
+      expect(st.questions.length).toBeGreaterThanOrEqual(2);
     }
   });
 

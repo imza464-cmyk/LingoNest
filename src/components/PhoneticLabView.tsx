@@ -102,7 +102,8 @@ export function PhoneticLabView({
   }, [pairIdx, selectedTrap]);
 
   const speakTarget = (text: string, slow = false) => {
-    audioEngine.speak(text, profile.targetLang, {
+    const trapLang = selectedTrap?.lang ?? profile.targetLang;
+    audioEngine.speak(text, trapLang, {
       slow: slow || profile.speechSlowMode,
       childPitch: isMini,
       onStart: () => setIsSpeaking(true),

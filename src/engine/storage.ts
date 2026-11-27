@@ -45,7 +45,7 @@ export function createProfile(
     avatarEmoji: avatarEmoji || (ageMode === 'mini' ? '🐣' : ageMode === 'explorer' ? '🧭' : '🎓'),
     ageMode,
     targetLang,
-    speechSlowMode: ageMode === 'mini',
+    speechSlowMode: false,
     soundFxEnabled: true,
     dailyGoalMinutes: defaultDailyGoalForAge(ageMode),
     cards: {},

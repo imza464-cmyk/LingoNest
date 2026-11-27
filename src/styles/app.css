@@ -6355,3 +6355,468 @@ body[data-age-mode='explorer'] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ============================================================================
+   Vocabulary Bank, Conjugation Reference Tables & Graded Short Stories
+   ============================================================================ */
+
+.ln-vb-cefr-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ln-vb-cefr-chip {
+  flex: 1 1 auto;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  color: #52525b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ln-mode-master .ln-vb-cefr-chip {
+  background: #162033;
+  border-color: #253349;
+  color: #94a3b8;
+}
+
+.ln-vb-cefr-chip.is-active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.ln-mode-master .ln-vb-cefr-chip.is-active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+.ln-vb-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ln-vb-entry-card {
+  border: 1px solid #e4e4e7;
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ln-mode-master .ln-vb-entry-card {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-vb-entry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ln-vb-tr-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ln-vb-tr-block strong {
+  font-size: 1.04rem;
+}
+
+.ln-vb-meta-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #52525b;
+}
+
+.ln-mode-master .ln-vb-meta-tag {
+  background: #090e1a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.ln-vb-learned-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ln-vb-lang-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ln-vb-lang-box {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ln-mode-master .ln-vb-lang-box {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.ln-vb-word-row,
+.ln-vb-example-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ln-vb-word-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ln-vb-lang-code {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.ln-mode-master .ln-vb-lang-code {
+  color: #38bdf8;
+}
+
+.ln-vb-target-word {
+  font-size: 1.08rem;
+}
+
+.ln-vb-form-note {
+  font-size: 0.8rem;
+  color: #71717a;
+}
+
+.ln-mode-master .ln-vb-form-note {
+  color: #94a3b8;
+}
+
+.ln-vb-example-texts {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ln-vb-ex-target {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.ln-vb-ex-tr {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #71717a;
+}
+
+.ln-mode-master .ln-vb-ex-tr {
+  color: #94a3b8;
+}
+
+/* Reference Conjugation Tables */
+.ln-hb-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.ln-mode-master .ln-hb-table-wrap {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-hb-table-caption {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e4e4e7;
+  font-size: 0.88rem;
+}
+
+.ln-mode-master .ln-hb-table-caption {
+  border-bottom-color: #253349;
+}
+
+.ln-hb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.ln-hb-table th,
+.ln-hb-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.ln-mode-master .ln-hb-table th,
+.ln-mode-master .ln-hb-table td {
+  border-bottom-color: #1e293b;
+}
+
+.ln-hb-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ln-hb-table th {
+  font-weight: 700;
+  background: #f4f4f5;
+}
+
+.ln-mode-master .ln-hb-table th {
+  background: #0f172a;
+}
+
+.ln-hb-blank-sentence {
+  font-size: 1.02rem;
+}
+
+/* Vocabulary & Grammar Quiz Cards */
+.ln-vb-quiz-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ln-vb-quiz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.ln-vb-quiz-prompt {
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ln-mode-master .ln-vb-quiz-prompt {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-vb-quiz-prompt h2 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.ln-vb-quiz-prompt p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.ln-vb-quiz-options,
+.ln-gs-q-opts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.ln-vb-quiz-opt {
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d4d4d8;
+  background: #ffffff;
+  color: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.ln-mode-master .ln-vb-quiz-opt {
+  background: #0f172a;
+  border-color: #253349;
+}
+
+.ln-vb-quiz-opt.is-correct {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.ln-mode-master .ln-vb-quiz-opt.is-correct {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.16);
+  color: #a7f3d0;
+}
+
+.ln-vb-quiz-opt.is-wrong {
+  border-color: #f43f5e;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.ln-mode-master .ln-vb-quiz-opt.is-wrong {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.16);
+  color: #fecdd3;
+}
+
+.ln-vb-quiz-feedback {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ln-mode-master .ln-vb-quiz-feedback {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-vb-quiz-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Graded Short Stories Reader */
+.ln-gs-audio-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.ln-gs-paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ln-gs-para-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+}
+
+.ln-mode-master .ln-gs-para-row {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-gs-para-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ln-gs-target-p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.68;
+}
+
+.ln-gs-tr-p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #71717a;
+}
+
+.ln-mode-master .ln-gs-tr-p {
+  color: #94a3b8;
+}
+
+.ln-gs-listen-btn {
+  flex-shrink: 0;
+}
+
+.ln-gs-vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.ln-gs-vocab-chip {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ln-mode-master .ln-gs-vocab-chip {
+  background: #162033;
+  border-color: #253349;
+}
+
+.ln-gs-vocab-chip div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ln-gs-vocab-chip span {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}

@@ -3237,7 +3237,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Süre (for / seit / desde hace) + "aslında" (actually) doğal akış',
             isBest: true,
             feedbackTr:
-              'Mükemmel! Devam eden sürede İngilizce Present Perfect + "for", Almanca şimdiki zaman + "seit", İspanyolca "desde hace" kalıbını tam isabetle kullandın.',
+              'Doğru kullanım: Devam eden sürede İngilizce Present Perfect + "for", Almanca şimdiki zaman + "seit", İspanyolca "desde hace" kalıbını tam isabetle kullandın.',
           },
           {
             text: {
@@ -3305,7 +3305,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Doğru edatlar: "depend on", "abhängen von", "depender de"',
             isBest: true,
             feedbackTr:
-              'Harika! Bağımlı edatları ("depend on", "von ... ab", "depender de") ve dolaylı nesne sırasını ("explain it to you") kusursuz kurdun.',
+              'Doğru kullanım: Bağımlı edatları ("depend on", "von ... ab", "depender de") ve dolaylı nesne sırasını ("explain it to you") kusursuz kurdun.',
           },
           {
             text: {
@@ -3418,7 +3418,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'EN "a" artikeli + gerund; DE/ES artikelsiz meslek',
             isBest: true,
             feedbackTr:
-              'Kusursuz! İngilizcede meslek önüne "a", DE ve ES dillerinde artikelsiz meslek kuralını doğru uyguladın; ayrıca "is staying calm" yüklemde tam isabet.',
+              'Doğru kullanım: İngilizcede meslek önüne "a", DE ve ES dillerinde artikelsiz meslek kuralını doğru uyguladın; ayrıca "is staying calm" yüklemde tam isabet.',
           },
           {
             text: {
@@ -3486,7 +3486,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"discuss" (edatsız) + "on the same page" + "make a decision"',
             isBest: true,
             feedbackTr:
-              'Mükemmel! Üç dilde de doğru eşdizimlilikler: "make a decision / Entscheidung treffen / tomar una decisión" ve net iş jargonu.',
+              'Doğru kullanım: Üç dilde de doğru eşdizimlilikler: "make a decision / Entscheidung treffen / tomar una decisión" ve net iş jargonu.',
           },
           {
             text: {
@@ -3610,7 +3610,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Doğru edatlar: "on business", "for five days", "until"',
             isBest: true,
             feedbackTr:
-              'Harika! Sınır kontrolünde net, özgüvenli ve gramer açısından tertemiz bir cevap verdin.',
+              'Doğru kullanım: Sınır kontrolünde net, özgüvenli ve gramer açısından tertemiz bir cevap verdin.',
           },
           {
             text: {
@@ -3656,7 +3656,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"missed the flight" + tekil "luggage hasn\'t"',
             isBest: true,
             feedbackTr:
-              'Süper! Uçuş kaçırmayı "missed", sayılamayan bagajı ise tekil fiille ("luggage hasn\'t") doğru ifade ettin.',
+              'Doğru kullanım: Uçuş kaçırmayı "missed", sayılamayan bagajı ise tekil fiille ("luggage hasn\'t") doğru ifade ettin.',
           },
           {
             text: {
@@ -3724,7 +3724,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Düzgün dolaylı soru sırası + tarifeli tren için geniş zaman',
             isBest: true,
             feedbackTr:
-              'Tam isabet! Dolaylı soru söz dizimini korudun ve tarifeli ulaşımı doğal geniş zamanla sordun.',
+              'Doğru kullanım: Dolaylı soru söz dizimini korudun ve tarifeli ulaşımı doğal geniş zamanla sordun.',
           },
           {
             text: {
@@ -3780,7 +3780,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"reproduce locally" + "currently" (actually değil!)',
             isBest: true,
             feedbackTr:
-              'Mühendislik jargonu tam yerinde! "produce" yerine "reproduce" ve "actually" tuzağı yerine "currently" kullanman harika.',
+              'Doğru kullanım: "produce" yerine "reproduce" ve "actually" tuzağı yerine "currently" kullanman harika.',
           },
           {
             text: {
@@ -3848,7 +3848,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"instead of + V-ing" + "out of scope"',
             isBest: true,
             feedbackTr:
-              'Mükemmel mimari iletişim! Hem gerçekçi kapsam belirledin hem de "instead of patching" ve "out of scope" yapılarını pürüzsüz kullandın.',
+              'Doğru yapı: Hem gerçekçi kapsam belirledin hem de "instead of patching" ve "out of scope" yapılarını pürüzsüz kullandın.',
           },
           {
             text: {
@@ -3916,7 +3916,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"compatible with" + "waiting for"',
             isBest: true,
             feedbackTr:
-              'Kusursuz! "backward-compatible with" ve "waiting for your feedback" ile bir senior mühendis gibi yanıt verdin.',
+              'Doğru kullanım: "backward-compatible with" ve "waiting for your feedback" ile teknik bağlamda doğal ve net bir cümle kurdun.',
           },
         ],
       },
@@ -3961,7 +3961,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"a table for two" + "what would you recommend"',
             isBest: true,
             feedbackTr:
-              'Şahane! İki kişilik masayı doğal "table for two" kalıbıyla istedin ve "recommend me" tuzağına düşmeden kibarca öneri sordun.',
+              'Doğru kullanım: İki kişilik masayı doğal "table for two" kalıbıyla istedin ve "recommend me" tuzağına düşmeden kibarca öneri sordun.',
           },
           {
             text: {
@@ -4029,7 +4029,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Doğru alerji edatları ("to / gegen / a")',
             isBest: true,
             feedbackTr:
-              'Çok net ve güvenli! Üç dilde de doğru alerji edatlarını kullandın ve menüdeki yemeği doğru sözcükle sordun.',
+              'Doğru kullanım: Üç dilde de doğru alerji edatlarını kullandın ve menüdeki yemeği doğru sözcükle sordun.',
           },
           {
             text: {
@@ -4097,7 +4097,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Doğal övgü + kibar hesap/bölüşme kalıbı',
             isBest: true,
             feedbackTr:
-              'Mükemmel! Yerel bir akşam yemeği misafiri gibi nazik, akıcı ve hatasız bir kapanış yaptın.',
+              'Doğru kullanım: Yerel bir akşam yemeği misafiri gibi nazik, akıcı ve hatasız bir kapanış yaptın.',
           },
         ],
       },
@@ -4142,7 +4142,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Diplomatik itiraz + "In my opinion" (According to me değil!)',
             isBest: true,
             feedbackTr:
-              'Harika liderlik dili! Önce karşı tarafı doğrulayıp sonra "In my opinion / Meiner Meinung nach" ile fikrini diplomatikçe savundun.',
+              'Doğal ve yapıcı ifade: Önce karşı tarafı doğrulayıp sonra "In my opinion / Meiner Meinung nach" ile fikrini diplomatikçe savundun.',
           },
           {
             text: {
@@ -4210,7 +4210,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: '"pros and cons" + "would rather + V1" + "put off"',
             isBest: true,
             feedbackTr:
-              'Çözüm odaklı müthiş bir B2 cevabı! Hem yapıcı orta yol sundun hem de deyimleri ve sözdizimini kusursuz işledin.',
+              'Doğru kullanım: Hem yapıcı orta yol sundun hem de deyimleri ve sözdizimini kusursuz işledin.',
           },
           {
             text: {
@@ -4278,7 +4278,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             turkishHint: 'Doğru zamir yeri ("figure it out") + "call it a day"',
             isBest: true,
             feedbackTr:
-              'Mükemmel bitiriş! Phrasal verb zamir sırası ("figure it out"), "Feierabend machen" ve "dejémoslo por hoy" tamamen ana dili düzeyinde.',
+              'Doğru kullanım: Phrasal verb zamir sırası ("figure it out"), "Feierabend machen" ve "dejémoslo por hoy" tamamen ana dili düzeyinde.',
           },
         ],
       },

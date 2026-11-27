@@ -32,6 +32,8 @@ export interface AdultStudioViewProps {
   onStartDueQueue?: () => void;
   onOpenDialogues: () => void;
   onOpenHandbook: () => void;
+  onOpenVocab: () => void;
+  onOpenStories: () => void;
   onOpenPhonetics: () => void;
   onOpenParentStats: () => void;
 }
@@ -53,6 +55,8 @@ export function AdultStudioView({
   onStartDueQueue,
   onOpenDialogues,
   onOpenHandbook,
+  onOpenVocab,
+  onOpenStories,
   onOpenPhonetics,
   onOpenParentStats,
 }: AdultStudioViewProps) {
@@ -322,11 +326,29 @@ export function AdultStudioView({
 
       {/* Reference & Practice Tools Row */}
       <div className="ln-adult-section-head">
-        <h2>Başvuru Kitaplığı ve Uygulama Araçları</h2>
-        <span>Dilbilgisi Rehberi · Diyalog · Telaffuz · İlerleme</span>
+        <h2>Temel Kaynaklar: Kelime, Dilbilgisi ve Okuma</h2>
+        <span>A1–B2 Sözlük · 18 Ders Dilbilgisi · Kısa Hikayeler · Diyalog</span>
       </div>
 
       <div className="ln-adult-tools-row">
+        <button
+          type="button"
+          className="ln-adult-tool-card"
+          onClick={() => {
+            audioEngine.playChime('tap', profile.soundFxEnabled);
+            onOpenVocab();
+          }}
+        >
+          <span className="ln-adult-tool-icon">
+            <Layers size={20} aria-hidden="true" />
+          </span>
+          <div className="ln-adult-tool-text">
+            <strong>Kelime Hazinesi (240 Temel Kelime)</strong>
+            <small>12 konu başlığı, sesli örnek cümleler ve kelime alıştırması</small>
+          </div>
+          <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
+        </button>
+
         <button
           type="button"
           className="ln-adult-tool-card"
@@ -339,8 +361,26 @@ export function AdultStudioView({
             <BookOpen size={20} aria-hidden="true" />
           </span>
           <div className="ln-adult-tool-text">
-            <strong>Dilbilgisi ve Kalıp Rehberi</strong>
-            <small>12 Karşılaştırmalı Bölüm · Türkçe tuzakları ve sesli örnekler</small>
+            <strong>Adım Adım Dilbilgisi (18 Ders)</strong>
+            <small>A1–B2 çekim tabloları, sade konu anlatımı ve alıştırmalar</small>
+          </div>
+          <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="ln-adult-tool-card"
+          onClick={() => {
+            audioEngine.playChime('tap', profile.soundFxEnabled);
+            onOpenStories();
+          }}
+        >
+          <span className="ln-adult-tool-icon">
+            <BookOpen size={20} aria-hidden="true" />
+          </span>
+          <div className="ln-adult-tool-text">
+            <strong>Kademeli Okuma Hikayeleri (A1–B2)</strong>
+            <small>8 gerçekçi kısa öykü, sesli dinleme ve okuduğunu anlama</small>
           </div>
           <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
         </button>

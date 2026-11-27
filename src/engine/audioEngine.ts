@@ -217,7 +217,7 @@ class LingoAudioEngine {
       return await new Promise<boolean>((resolve) => {
         const el = new Audio(src);
         el.preload = 'auto';
-        const rate = opts?.slow ? 0.8 : opts?.fast ? 1.12 : 1.0;
+        const rate = opts?.slow ? 0.88 : opts?.fast ? 1.1 : 1.0;
         el.playbackRate = rate;
         // Preserve natural human pitch even when slowed to 0.80x for 5-year-olds!
         const audioWithPitch = el as HTMLAudioElement & {
@@ -264,16 +264,21 @@ class LingoAudioEngine {
     }
     try {
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
       const voice = this.pickBestVoice(lang);
+      // Never allow a Turkish system voice to read EN/DE/ES text with Turkish phonetics!
+      if (!voice && lang !== 'tr' && this.voices.length > 0) {
+        opts?.onEnd?.();
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(text);
       if (voice) {
         u.voice = voice;
         u.lang = voice.lang;
       } else {
         u.lang = LANG_BCP47[lang][0];
       }
-      u.rate = opts?.slow ? 0.8 : opts?.fast ? 1.12 : 0.96;
-      u.pitch = opts?.childPitch ? 1.05 : 1.0;
+      u.rate = opts?.slow ? 0.88 : opts?.fast ? 1.08 : 0.98;
+      u.pitch = 1.0;
       u.volume = 1.0;
       u.onstart = () => opts?.onStart?.();
       u.onend = () => opts?.onEnd?.();

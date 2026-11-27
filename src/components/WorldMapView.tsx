@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { BookOpen, Clock, Ear, Play, Sparkles, Star, Trees, Volume2 } from 'lucide-react';
+import { BookOpen, Clock, Ear, Layers, Play, Sparkles, Star, Trees, Volume2 } from 'lucide-react';
 import type { LearnerProfile, WorldData } from '../types';
 import { audioEngine } from '../engine/audioEngine';
 import { TR_VOICE, TR_WORLD_INTROS } from '../data/voiceScripts';
@@ -18,6 +18,8 @@ export interface WorldMapViewProps {
   onOpenLivingWorld: () => void;
   onOpenStories: () => void;
   onOpenPhonetics: () => void;
+  onOpenVocab?: () => void;
+  onOpenHandbook?: () => void;
 }
 
 interface WorldStats {
@@ -34,6 +36,8 @@ export function WorldMapView({
   onOpenLivingWorld,
   onOpenStories,
   onOpenPhonetics,
+  onOpenVocab,
+  onOpenHandbook,
 }: WorldMapViewProps) {
   const isMini = profile.ageMode === 'mini';
 
@@ -103,10 +107,10 @@ export function WorldMapView({
         <div className="ln-hero-banner">
           <div style={{ flex: '1 1 100%', marginBottom: '4px' }}>
             <h1 style={{ fontSize: 'clamp(1.25rem, 2.2vw, 1.65rem)' }}>
-              LingoNest — {languageNameTr} Keşif Adaları
+              LingoNest — {languageNameTr} Öğrenme Adaları
             </h1>
             <p style={{ margin: '4px 0 0', color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
-              5 yaşından yetişkine FSRS-5 hafıza ritmi ve 1.912 nöral ses ile doğal dil edinimi.
+              Dinleyerek, eşleştirerek ve yüksek sesle tekrar ederek temel kelimeleri keşfedin.
             </p>
           </div>
           <button
@@ -140,10 +144,10 @@ export function WorldMapView({
         <div className="ln-hero-banner">
           <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <h1 style={{ fontSize: 'clamp(1.45rem, 2.5vw, 2rem)' }}>
-              {languageNameTr} Keşif Adaları
+              {languageNameTr} Çalışma ve Keşif Alanı
             </h1>
             <p style={{ margin: 0, color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
-              Doğal ses, hareket ve FSRS-5 akıllı tekrar ritmiyle 6 tematik dünyada öğren.
+              Tematik kelime grupları, 240 kelimelik sözlük, 18 derslik dilbilgisi ve kısa hikayelerle adım adım ilerleyin.
             </p>
             <div className="ln-chip-group" style={{ marginTop: '4px' }}>
               <span className="ln-chip-btn">
@@ -170,29 +174,32 @@ export function WorldMapView({
           </div>
 
           <div className="ln-chip-group">
-            <button
-              type="button"
-              className="ln-clay-btn ln-clay-btn--soft"
-              onClick={handleAudioWelcome}
-              aria-label="Piko sesli karşılamayı dinle"
-            >
-              <span style={{ fontSize: '1.25rem', lineHeight: 1 }} aria-hidden="true">
-                🦉
-              </span>
-              <Volume2 size={18} />
-              <span>Dinle</span>
-            </button>
-            <button
-              type="button"
-              className="ln-clay-btn ln-clay-btn--mint"
-              onClick={() => {
-                audioEngine.playChime('tap', profile.soundFxEnabled);
-                onOpenLivingWorld();
-              }}
-            >
-              <Trees size={18} />
-              <span>Yaşayan Dünya</span>
-            </button>
+            {onOpenVocab && (
+              <button
+                type="button"
+                className="ln-clay-btn ln-clay-btn--mint"
+                onClick={() => {
+                  audioEngine.playChime('tap', profile.soundFxEnabled);
+                  onOpenVocab();
+                }}
+              >
+                <Layers size={18} />
+                <span>Kelimeler (240)</span>
+              </button>
+            )}
+            {onOpenHandbook && (
+              <button
+                type="button"
+                className="ln-clay-btn ln-clay-btn--soft"
+                onClick={() => {
+                  audioEngine.playChime('tap', profile.soundFxEnabled);
+                  onOpenHandbook();
+                }}
+              >
+                <BookOpen size={18} />
+                <span>Dilbilgisi (18 Ders)</span>
+              </button>
+            )}
             <button
               type="button"
               className="ln-clay-btn ln-clay-btn--lavender"
@@ -213,7 +220,7 @@ export function WorldMapView({
               }}
             >
               <Ear size={18} />
-              <span>Ses Lab</span>
+              <span>Telaffuz</span>
             </button>
           </div>
         </div>

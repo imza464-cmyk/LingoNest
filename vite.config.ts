@@ -28,6 +28,12 @@ export default defineConfig(({ isSsrBuild }) => ({
                   return 'vendor-react';
                 }
               }
+              if (id.includes('grammarHandbook')) {
+                return 'data-grammar';
+              }
+              if (id.includes('vocabBank') || id.includes('gradedStories')) {
+                return 'data-vocab';
+              }
               if (id.includes('/src/data/') || id.includes('\\src\\data\\')) {
                 return 'curriculum-data';
               }
