@@ -1,6 +1,7 @@
 import { createInternalNeonAuth } from '@neon/auth';
 import { BetterAuthReactAdapter } from '@neon/auth/react/adapters';
-import type { VaultState } from './storage';
+import type { LanguageCode } from '../types';
+import { mergeLingoVaults, type VaultState } from './storage';
 
 const DEFAULT_AUTH_URL =
   'https://ep-super-grass-bhia8pi1.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth';
@@ -174,22 +175,94 @@ export async function pullCloudVault(): Promise<CloudVaultSnapshot> {
 
 export async function pushCloudVault(
   vault: VaultState,
-): Promise<{ revision: number; updatedAt: string }> {
+  expectedRevision?: number,
+): Promise<{ revision: number; updatedAt: string; mergedVault?: VaultState }> {
   const jwt = await getBearerJwt();
   if (!jwt) throw new Error('Oturum anahtarı alınamadı; lütfen tekrar giriş yapın.');
+  const payload: { vault: VaultState; expectedRevision?: number } = { vault };
+  if (typeof expectedRevision === 'number') {
+    payload.expectedRevision = expectedRevision;
+  }
   const resp = await fetch(`${CLOUD_API_URL}/vault`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${jwt}`,
     },
-    body: JSON.stringify({ vault }),
+    body: JSON.stringify(payload),
   });
   const data = await resp.json();
+
+  // Optimistic Concurrency Control (409 Conflict): merge server + local without losing progress
+  if (resp.status === 409 && data?.serverVault) {
+    const merged = mergeLingoVaults(vault, data.serverVault as VaultState);
+    const retryResp = await fetch(`${CLOUD_API_URL}/vault`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        vault: merged,
+        expectedRevision: Number(data.revision),
+      }),
+    });
+    const retryData = await retryResp.json();
+    if (!retryResp.ok) {
+      throw new Error(retryData?.error || 'Bulut birleştirme senkronizasyonu başarısız oldu.');
+    }
+    return {
+      revision: Number(retryData.revision),
+      updatedAt: String(retryData.updatedAt),
+      mergedVault: merged,
+    };
+  }
+
   if (!resp.ok) {
     throw new Error(data?.error || 'Bulut senkronizasyonu başarısız oldu.');
   }
   return { revision: Number(data.revision), updatedAt: String(data.updatedAt) };
+}
+
+export interface ContrastiveCoachRequest {
+  targetLang: LanguageCode;
+  phrase?: string;
+  learnerAttempt?: string;
+  question?: string;
+  turkishTrapTr?: string;
+}
+
+export async function askContrastiveCoach(params: ContrastiveCoachRequest): Promise<string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const jwt = await getBearerJwt();
+  if (jwt) {
+    headers.Authorization = `Bearer ${jwt}`;
+  }
+  try {
+    const resp = await fetch(`${CLOUD_API_URL}/coach`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = (await resp.json()) as { reply?: string; error?: string };
+    if (resp.ok && typeof data.reply === 'string' && data.reply.trim().length > 0) {
+      return data.reply.trim();
+    }
+    if (resp.status === 429 && data?.error) {
+      return data.error;
+    }
+  } catch {
+    // Graceful offline contrastive fallback below
+  }
+
+  const trapNote = params.turkishTrapTr
+    ? `Yapısal Neden: ${params.turkishTrapTr}`
+    : 'Türkçe sondan eklemeli (SOV) yapıyı hedef dile birebir çevirmek yerine çekimli fiili öznenin hemen arkasına yerleştirin.';
+  const targetNote = params.phrase ? `Doğal kalıp: "${params.phrase}". ` : '';
+  return `${targetNote}${trapNote}`;
 }
 
 export async function createPlanCheckoutIntent(planCode: string): Promise<{

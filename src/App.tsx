@@ -42,10 +42,12 @@ import {
   defaultNameForAge,
   eraseVaultCompletely,
   loadVault,
+  mergeLingoVaults,
   saveVault,
   todayDateKey,
   type VaultState,
 } from './engine/storage';
+import { getCloudSession, pullCloudVault, pushCloudVault } from './engine/cloudSync';
 import { AgeModeSwitcher } from './components/AgeModeSwitcher';
 import { WorldMapView } from './components/WorldMapView';
 import { PlaySessionView } from './components/PlaySessionView';
@@ -55,6 +57,7 @@ import { PhoneticLabView } from './components/PhoneticLabView';
 import { AdultStudioView } from './components/AdultStudioView';
 import { AdultPracticeView } from './components/AdultPracticeView';
 import { AdultDialogueView } from './components/AdultDialogueView';
+import { GrammarHandbookView } from './components/GrammarHandbookView';
 import { ParentDashboardModal } from './components/ParentDashboardModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { CloudAccountModal } from './components/CloudAccountModal';
@@ -92,11 +95,15 @@ export function App() {
     ADULT_MODULES[0]?.id ?? 'daily_fluency',
   );
   const [adultDueQueueIds, setAdultDueQueueIds] = useState<string[] | null>(null);
+  const [handbookChapterId, setHandbookChapterId] = useState<string | undefined>(undefined);
   const [showParentModal, setShowParentModal] = useState(false);
   const [showCloudModal, setShowCloudModal] = useState(false);
 
   const switcherBackRef = useRef<(() => boolean) | null>(null);
   const viewSubBackRef = useRef<(() => boolean) | null>(null);
+  const cloudRevisionRef = useRef<number | undefined>(undefined);
+  const cloudSyncReadyRef = useRef<boolean>(false);
+  const suppressNextPushRef = useRef<boolean>(false);
 
   const handleRegisterSwitcherBack = useCallback((fn: (() => boolean) | null) => {
     switcherBackRef.current = fn;
@@ -109,6 +116,106 @@ export function App() {
   useEffect(() => {
     saveVault(vault);
   }, [vault]);
+
+  // Initial Cloud Session Check & Non-Destructive Vault Pull
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    let active = true;
+    getCloudSession()
+      .then(async (sess) => {
+        if (!active || !sess) return;
+        try {
+          const snap = await pullCloudVault();
+          if (!active) return;
+          cloudRevisionRef.current = snap.revision;
+          if (snap.vault) {
+            suppressNextPushRef.current = true;
+            setVault((prev) => mergeLingoVaults(prev, snap.vault!));
+          }
+          cloudSyncReadyRef.current = true;
+        } catch {
+          // Offline mode remains fully operational
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Debounced Optimistic-Concurrency Cloud Auto-Sync
+  useEffect(() => {
+    if (typeof window === 'undefined' || !cloudSyncReadyRef.current) return undefined;
+    if (suppressNextPushRef.current) {
+      suppressNextPushRef.current = false;
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      pushCloudVault(vault, cloudRevisionRef.current)
+        .then((res) => {
+          cloudRevisionRef.current = res.revision;
+          if (res.mergedVault) {
+            suppressNextPushRef.current = true;
+            setVault(res.mergedVault);
+          }
+        })
+        .catch(() => {
+          // Silently retain local vault until next online review
+        });
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [vault]);
+
+  // Bidirectional URL Hash Routing (#studyo, #rehber, #rehber/<id>, #diyalog, #fonetik, #hikayeler, #bahcem)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const applyHash = () => {
+      const raw = window.location.hash.replace(/^#\/?/, '').trim();
+      if (!raw) return;
+      if (raw === 'rehber' || raw.startsWith('rehber/')) {
+        const ch = raw.split('/')[1];
+        if (ch) setHandbookChapterId(ch);
+        setView('handbook');
+      } else if (raw === 'diyalog') {
+        setView('adult-dialogues');
+      } else if (raw === 'fonetik') {
+        setView('phonetics');
+      } else if (raw === 'hikayeler') {
+        setView('stories');
+      } else if (raw === 'bahcem') {
+        setView('living-world');
+      } else if (raw === 'studyo' || raw === 'dunyalar') {
+        setView('worlds');
+      }
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let targetHash = '';
+    if (view === 'handbook') {
+      targetHash = handbookChapterId ? `#rehber/${handbookChapterId}` : '#rehber';
+    } else if (view === 'adult-dialogues') {
+      targetHash = '#diyalog';
+    } else if (view === 'phonetics') {
+      targetHash = '#fonetik';
+    } else if (view === 'stories') {
+      targetHash = '#hikayeler';
+    } else if (view === 'living-world') {
+      targetHash = '#bahcem';
+    } else if (window.location.hash) {
+      const currentMode = (
+        vault.profiles.find((p) => p.id === vault.activeProfileId) ?? vault.profiles[0]
+      )?.ageMode;
+      targetHash = currentMode === 'master' ? '#studyo' : '#dunyalar';
+    }
+    if (targetHash && window.location.hash !== targetHash) {
+      window.history.replaceState(null, '', targetHash);
+    }
+  }, [view, handbookChapterId, vault.activeProfileId, vault.profiles]);
 
   const activeProfile: LearnerProfile = useMemo(() => {
     return vault.profiles.find((p) => p.id === vault.activeProfileId) ?? vault.profiles[0];
@@ -438,9 +545,9 @@ export function App() {
       return {
         id: 'fsrs_daily_due',
         order: 0,
-        titleTr: 'FSRS-5 Günlük Tekrar Kuyruğu',
-        subtitleTr: 'Tüm modüllerden bugün tekrar zamanı gelen kartlar',
-        icon: '⚡',
+        titleTr: 'Günlük Tekrar Çalışması',
+        subtitleTr: 'Tüm bölümlerden bugün tekrar zamanı gelen ifadeler',
+        icon: '00',
         cefrRange: 'A2–B2',
         accentHex: '#38bdf8',
         items: ALL_ADULT_ITEMS,
@@ -478,14 +585,14 @@ export function App() {
           <span className="ln-brand-text">
             <strong>LingoNest</strong>
             {!isMini && (
-              <small>{isMaster ? 'Cognitive SLA & FSRS-5 Studio' : 'Kaşif Dil Stüdyosu'}</small>
+              <small>{isMaster ? 'Yetişkin Dil Çalışma Alanı' : 'Kaşif Dil Stüdyosu'}</small>
             )}
           </span>
         </button>
 
         {/* Morphing Navigation Pills per Developmental Stage */}
         {isMaster ? (
-          <nav className="ln-nav-pills" aria-label="Yetişkin Stüdyo Gezinme">
+          <nav className="ln-nav-pills" aria-label="Yetişkin Çalışma Gezinme">
             <button
               type="button"
               className={`ln-nav-pill ${view === 'worlds' || view === 'adult-practice' ? 'active' : ''}`}
@@ -495,7 +602,19 @@ export function App() {
               }}
             >
               <Zap size={17} />
-              <span>Stüdyo</span>
+              <span>Çalışma Masası</span>
+            </button>
+
+            <button
+              type="button"
+              className={`ln-nav-pill ${view === 'handbook' ? 'active' : ''}`}
+              onClick={() => {
+                audioEngine.stopSpeaking();
+                setView('handbook');
+              }}
+            >
+              <BookOpen size={17} />
+              <span>Dilbilgisi Rehberi</span>
             </button>
 
             <button
@@ -519,7 +638,7 @@ export function App() {
               }}
             >
               <Ear size={17} />
-              <span>Kontrastif Ses Lab</span>
+              <span>Telaffuz</span>
             </button>
 
             <button
@@ -528,7 +647,7 @@ export function App() {
               onClick={() => setShowParentModal(true)}
             >
               <BarChart3 size={17} />
-              <span>FSRS Analitik</span>
+              <span>İlerleme</span>
             </button>
           </nav>
         ) : (
@@ -693,8 +812,19 @@ export function App() {
             onStartModule={handleStartAdultModule}
             onStartDueQueue={handleStartAdultDueQueue}
             onOpenDialogues={() => setView('adult-dialogues')}
+            onOpenHandbook={() => setView('handbook')}
             onOpenPhonetics={() => setView('phonetics')}
             onOpenParentStats={() => setShowParentModal(true)}
+          />
+        )}
+
+        {view === 'handbook' && (
+          <GrammarHandbookView
+            profile={activeProfile}
+            languageNameTr={langMeta.nameTr}
+            initialChapterId={handbookChapterId}
+            onChapterSelect={(id) => setHandbookChapterId(id)}
+            onBack={() => setView('worlds')}
           />
         )}
 
@@ -789,7 +919,20 @@ export function App() {
                 }}
               >
                 <Zap size={20} aria-hidden="true" />
-                <span>Stüdyo</span>
+                <span>Çalışma</span>
+              </button>
+
+              <button
+                type="button"
+                className={`ln-mobile-nav-item ${view === 'handbook' ? 'active' : ''}`}
+                aria-current={view === 'handbook' ? 'page' : undefined}
+                onClick={() => {
+                  audioEngine.stopSpeaking();
+                  setView('handbook');
+                }}
+              >
+                <BookOpen size={20} aria-hidden="true" />
+                <span>Rehber</span>
               </button>
 
               <button
@@ -815,16 +958,7 @@ export function App() {
                 }}
               >
                 <Ear size={20} aria-hidden="true" />
-                <span>Ses Lab</span>
-              </button>
-
-              <button
-                type="button"
-                className={`ln-mobile-nav-item ${showParentModal ? 'active' : ''}`}
-                onClick={() => setShowParentModal(true)}
-              >
-                <BarChart3 size={20} aria-hidden="true" />
-                <span>Analitik</span>
+                <span>Telaffuz</span>
               </button>
             </>
           ) : (

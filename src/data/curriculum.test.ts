@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_VOCAB, LANGUAGE_META, PHONETIC_TRAPS, STORIES, VOCAB_BY_ID, WORLDS } from './curriculum';
 import { ADULT_DIALOGUES, ADULT_ITEM_BY_ID, ADULT_MODULES, ALL_ADULT_ITEMS } from './adultCurriculum';
+import { GRAMMAR_HANDBOOK_CHAPTERS } from './grammarHandbook';
+import { createDefaultVault, mergeLingoVaults } from '../engine/storage';
 
 describe('LingoNest Curriculum Data Integrity', () => {
   it('contains 6 worlds x 10 items = 60 unique trilingual vocab concepts', () => {
@@ -56,10 +58,10 @@ describe('LingoNest Curriculum Data Integrity', () => {
     expect(byLang).toEqual({ en: 6, de: 4, es: 4 });
   });
 
-  it('contains 6 adult modules x 10 trilingual phrases + 6 roleplay dialogues with valid cloze & traps', () => {
-    expect(ADULT_MODULES).toHaveLength(6);
-    expect(ALL_ADULT_ITEMS).toHaveLength(60);
-    expect(Object.keys(ADULT_ITEM_BY_ID)).toHaveLength(60);
+  it('contains 10 adult modules (80 trilingual phrases = 240 localized items) + 6 roleplay dialogues with valid cloze & traps', () => {
+    expect(ADULT_MODULES).toHaveLength(10);
+    expect(ALL_ADULT_ITEMS).toHaveLength(80);
+    expect(Object.keys(ADULT_ITEM_BY_ID)).toHaveLength(80);
     for (const item of ALL_ADULT_ITEMS) {
       expect(item.turkishTrapTr.length).toBeGreaterThan(10);
       for (const lang of ['en', 'de', 'es'] as const) {
@@ -79,5 +81,65 @@ describe('LingoNest Curriculum Data Integrity', () => {
         expect(lt.options?.filter((o) => o.isBest)).toHaveLength(1);
       }
     }
+  });
+
+  it('provides 12 complete trilingual contrastive grammar handbook chapters', () => {
+    expect(GRAMMAR_HANDBOOK_CHAPTERS).toHaveLength(12);
+    const ids = new Set<string>();
+    for (const ch of GRAMMAR_HANDBOOK_CHAPTERS) {
+      expect(ids.has(ch.id)).toBe(false);
+      ids.add(ch.id);
+      expect(ch.sections.length).toBeGreaterThanOrEqual(2);
+      expect(ch.rulesSummary.length).toBeGreaterThanOrEqual(3);
+      expect(ch.turkishTraps.length).toBeGreaterThanOrEqual(2);
+      for (const lang of ['en', 'de', 'es'] as const) {
+        const comp = ch.langComparisons[lang];
+        expect(comp.wrongCalque.length).toBeGreaterThan(3);
+        expect(comp.naturalForm.length).toBeGreaterThan(3);
+        expect(comp.ipa.startsWith('/')).toBe(true);
+        expect(comp.structuralWhyTr.length).toBeGreaterThan(15);
+      }
+    }
+  });
+
+  it('merges concurrent local and cloud vaults non-destructively (OCC mergeLingoVaults)', () => {
+    const base = createDefaultVault(true);
+    const pId = base.profiles[0].id;
+    const local = structuredClone(base);
+    const remote = structuredClone(base);
+
+    local.profiles[0].completedStories = ['story_animals'];
+    local.profiles[0].cards['en:animals_cat'] = {
+      itemId: 'animals_cat',
+      lang: 'en',
+      stability: 8.5,
+      difficulty: 4.2,
+      reps: 3,
+      lapses: 0,
+      lastReviewAt: 2000,
+      dueAt: 9000,
+      lastGrade: 3,
+      speakingCompleted: true,
+    };
+
+    remote.profiles[0].completedStories = ['story_colors'];
+    remote.profiles[0].cards['en:animals_dog'] = {
+      itemId: 'animals_dog',
+      lang: 'en',
+      stability: 6.1,
+      difficulty: 4.8,
+      reps: 2,
+      lapses: 0,
+      lastReviewAt: 1800,
+      dueAt: 8000,
+      lastGrade: 3,
+      speakingCompleted: false,
+    };
+
+    const merged = mergeLingoVaults(local, remote);
+    const mergedProf = merged.profiles.find((p) => p.id === pId)!;
+    expect(mergedProf.completedStories.sort()).toEqual(['story_animals', 'story_colors']);
+    expect(mergedProf.cards['en:animals_cat']?.reps).toBe(3);
+    expect(mergedProf.cards['en:animals_dog']?.reps).toBe(2);
   });
 });

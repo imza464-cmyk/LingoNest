@@ -31,6 +31,7 @@ export interface AdultStudioViewProps {
   onStartModule: (moduleId: string) => void;
   onStartDueQueue?: () => void;
   onOpenDialogues: () => void;
+  onOpenHandbook: () => void;
   onOpenPhonetics: () => void;
   onOpenParentStats: () => void;
 }
@@ -51,6 +52,7 @@ export function AdultStudioView({
   onStartModule,
   onStartDueQueue,
   onOpenDialogues,
+  onOpenHandbook,
   onOpenPhonetics,
   onOpenParentStats,
 }: AdultStudioViewProps) {
@@ -147,26 +149,26 @@ export function AdultStudioView({
   };
 
   return (
-    <section className="ln-adult-studio" aria-label="Yetişkin Bilişsel Dil Stüdyosu">
-      {/* Top Studio Header & Executive Telemetry Strip */}
+    <section className="ln-adult-studio" aria-label="Yetişkin Çalışma Masası">
+      {/* Top Studio Header & Progress Summary */}
       <header className="ln-adult-hero">
         <div className="ln-adult-hero-top">
           <div className="ln-adult-title-block">
             <div className="ln-adult-kicker">
               <Zap size={14} aria-hidden="true" />
-              <span>Bilişsel Dil Stüdyosu · {languageNameTr}</span>
+              <span>Yetişkin Çalışma Alanı · {languageNameTr}</span>
             </div>
-            <h1 className="ln-adult-h1">FSRS-5 Aktif Üretim Kokpiti</h1>
+            <h1 className="ln-adult-h1">Günlük Çalışma Masası</h1>
             <p className="ln-adult-subtitle">
-              Türkçe L1 kontrastif tuzak analizi, aktif boşluk doldurma, sözdizimi kurulumu ve
-              şeffaf DSR bellek planlaması.
+              Türkçe düşünürken sık yapılan çeviri hatalarını düzeltin, aktif cümle kurun ve
+              kalıcı tekrar planınızla ilerleyin.
             </p>
           </div>
 
           <div className="ln-adult-cta-wrap">
-            <div className="ln-adult-pareto-badge" title="Pareto-optimal yetişkin hedef hatırlama oranı">
+            <div className="ln-adult-pareto-badge" title="Hedeflenen uzun süreli hatırlama oranı">
               <Target size={14} aria-hidden="true" />
-              <span>R* = {telemetry.desiredRetentionPct}% Pareto</span>
+              <span>Hedef Hatırlama: %{telemetry.desiredRetentionPct}</span>
             </div>
             <button
               type="button"
@@ -175,7 +177,7 @@ export function AdultStudioView({
               disabled={!telemetry.recommendedModuleId && !(telemetry.totalDue > 0 && onStartDueQueue)}
             >
               <Play size={16} aria-hidden="true" />
-              <span>FSRS Günlük Tekrarı Başlat</span>
+              <span>Günlük Çalışmayı Başlat</span>
               {telemetry.totalDue > 0 && (
                 <span className="ln-adult-pill-count">{telemetry.totalDue}</span>
               )}
@@ -183,12 +185,12 @@ export function AdultStudioView({
           </div>
         </div>
 
-        {/* Executive Telemetry Strip */}
-        <div className="ln-adult-telemetry-strip" role="region" aria-label="Bellek Telemetrisi">
+        {/* Progress Summary Strip */}
+        <div className="ln-adult-telemetry-strip" role="region" aria-label="Çalışma Özeti">
           <div className="ln-adult-metric-card">
             <span className="ln-adult-metric-label">
               <Layers size={14} aria-hidden="true" />
-              Aktif Sözcük Dağarcığı
+              Öğrenilen Kalıplar
             </span>
             <strong className="ln-adult-metric-value">
               {telemetry.totalActive} <small>/ {telemetry.totalItems}</small>
@@ -198,7 +200,7 @@ export function AdultStudioView({
           <div className="ln-adult-metric-card">
             <span className="ln-adult-metric-label">
               <Clock size={14} aria-hidden="true" />
-              Bekleyen FSRS-5 Tekrarı
+              Bugünkü Tekrarlar
             </span>
             <strong
               className={`ln-adult-metric-value ${telemetry.totalDue > 0 ? 'is-due' : ''}`}
@@ -210,7 +212,7 @@ export function AdultStudioView({
           <div className="ln-adult-metric-card">
             <span className="ln-adult-metric-label">
               <TrendingUp size={14} aria-hidden="true" />
-              Ort. Hatırlama (R%)
+              Hatırlama Oranı
             </span>
             <strong className="ln-adult-metric-value">
               {telemetry.avgRetrievabilityPct !== null
@@ -222,7 +224,7 @@ export function AdultStudioView({
           <div className="ln-adult-metric-card">
             <span className="ln-adult-metric-label">
               <Award size={14} aria-hidden="true" />
-              Ort. Bellek Stabilitesi (S)
+              Ortalama Kalıcılık
             </span>
             <strong className="ln-adult-metric-value">
               {telemetry.avgStabilityDays !== null
@@ -233,10 +235,10 @@ export function AdultStudioView({
         </div>
       </header>
 
-      {/* 6 Real-World Adult Module Cards */}
+      {/* Real-World Adult Module Cards */}
       <div className="ln-adult-section-head">
-        <h2>Gerçek Hayat Yetkinlik Modülleri</h2>
-        <span>{sortedModules.length} Modül · CEFR A2–B2</span>
+        <h2>Konu Başlıkları ve Kalıp Dersleri</h2>
+        <span>{sortedModules.length} Bölüm · Seviye A2–B2</span>
       </div>
 
       <div className="ln-adult-module-grid">
@@ -264,8 +266,8 @@ export function AdultStudioView({
               }}
             >
               <div className="ln-adult-module-head">
-                <span className="ln-adult-module-icon" aria-hidden="true">
-                  {mod.icon}
+                <span className="ln-adult-module-icon ln-adult-module-num" aria-hidden="true">
+                  {String(mod.order).padStart(2, '0')}
                 </span>
                 <div className="ln-adult-module-badges">
                   <span className="ln-adult-cefr-badge">{mod.cefrRange}</span>
@@ -287,12 +289,12 @@ export function AdultStudioView({
               <div className="ln-adult-module-footer">
                 <div className="ln-adult-progress-row">
                   <span>
-                    {stats.masteredCount} / {mod.items.length} aktif
+                    {stats.masteredCount} / {mod.items.length} öğrenildi
                   </span>
                   <span>
                     {stats.avgRetrievabilityPct !== null
-                      ? `R ${stats.avgRetrievabilityPct}%`
-                      : `${progressPct}%`}
+                      ? `%${stats.avgRetrievabilityPct}`
+                      : `%${progressPct}`}
                   </span>
                 </div>
                 <div
@@ -310,7 +312,7 @@ export function AdultStudioView({
               </div>
 
               <span className="ln-adult-module-launch">
-                <span>Oturumu Aç</span>
+                <span>Dersi Aç</span>
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
             </button>
@@ -318,13 +320,31 @@ export function AdultStudioView({
         })}
       </div>
 
-      {/* Quick-Access Studio Tools Row */}
+      {/* Reference & Practice Tools Row */}
       <div className="ln-adult-section-head">
-        <h2>Hızlı Stüdyo Araçları</h2>
-        <span>Ses · Diyalog · Bellek Analitiği</span>
+        <h2>Başvuru Kitaplığı ve Uygulama Araçları</h2>
+        <span>Dilbilgisi Rehberi · Diyalog · Telaffuz · İlerleme</span>
       </div>
 
       <div className="ln-adult-tools-row">
+        <button
+          type="button"
+          className="ln-adult-tool-card"
+          onClick={() => {
+            audioEngine.playChime('tap', profile.soundFxEnabled);
+            onOpenHandbook();
+          }}
+        >
+          <span className="ln-adult-tool-icon">
+            <BookOpen size={20} aria-hidden="true" />
+          </span>
+          <div className="ln-adult-tool-text">
+            <strong>Dilbilgisi ve Kalıp Rehberi</strong>
+            <small>12 Karşılaştırmalı Bölüm · Türkçe tuzakları ve sesli örnekler</small>
+          </div>
+          <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
+        </button>
+
         <button
           type="button"
           className="ln-adult-tool-card"
@@ -337,7 +357,7 @@ export function AdultStudioView({
             <MessageSquare size={20} aria-hidden="true" />
           </span>
           <div className="ln-adult-tool-text">
-            <strong>Rol-Yapma Diyalog Stüdyosu</strong>
+            <strong>Gerçek Hayat Diyalogları</strong>
             <small>
               {dialogues.length} Senaryo · {telemetry.completedDialoguesCount} tamamlandı
             </small>
@@ -357,8 +377,8 @@ export function AdultStudioView({
             <Ear size={20} aria-hidden="true" />
           </span>
           <div className="ln-adult-tool-text">
-            <strong>Türkçe → {languageNameTr} Kontrastif Ses Labı</strong>
-            <small>/θ/ /ð/ /æ/ /w/ /ŋ/ /ə/ minimal çiftler &amp; telaffuz</small>
+            <strong>{languageNameTr} Telaffuz Çalışması</strong>
+            <small>Karşılaştırmalı ses çiftleri ve ağız pozisyonu rehberi</small>
           </div>
           <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
         </button>
@@ -372,11 +392,11 @@ export function AdultStudioView({
           }}
         >
           <span className="ln-adult-tool-icon">
-            <BookOpen size={20} aria-hidden="true" />
+            <TrendingUp size={20} aria-hidden="true" />
           </span>
           <div className="ln-adult-tool-text">
-            <strong>FSRS-5 Bellek Eğrisi &amp; Analitik</strong>
-            <small>D/S/R parametreleri, günlük aktivite ve profil kasası</small>
+            <strong>Çalışma Geçmişi ve Yedekleme</strong>
+            <small>Günlük süre, kalıcılık grafiği ve profil ayarları</small>
           </div>
           <ArrowRight size={16} className="ln-adult-tool-arrow" aria-hidden="true" />
         </button>

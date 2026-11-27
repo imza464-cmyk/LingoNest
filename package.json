@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc --noEmit && vite build && vite build --ssr src/entry-ssg.tsx --outDir dist-ssr && node scripts/prerender_ssg.mjs && python \"C:/Users/serit/projelerim/KALEOS/scripts/kweb_gate.py\" .",
+    "build": "python scripts/verify_linguistic_accuracy.py && tsc --noEmit && vite build && vite build --ssr src/entry-ssg.tsx --outDir dist-ssr && node scripts/prerender_ssg.mjs && python \"C:/Users/serit/projelerim/KALEOS/scripts/kweb_gate.py\" .",
     "preview": "vite preview --host",
-    "test": "vitest run",
+    "test": "vitest run src neon/__tests__",
+    "verify:curriculum": "python scripts/verify_linguistic_accuracy.py",
+    "ingest:content": "python scripts/ingest_lingo_content.py",
+    "deploy:api": "node neon/deploy_api.mjs",
+    "deploy:web": "node neon/deploy_web.mjs",
     "verify:web": "python \"C:/Users/serit/projelerim/KALEOS/scripts/kweb_gate.py\" ."
   },
   "dependencies": {
@@ -20,6 +24,8 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "jose": "^6.2.18",
+    "pg": "^8.23.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vitest": "^2.1.8"

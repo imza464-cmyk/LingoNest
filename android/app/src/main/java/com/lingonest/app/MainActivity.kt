@@ -198,7 +198,7 @@ class MainActivity : ComponentActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
-                if (url.startsWith(LIVE_ORIGIN)) {
+                if (url.startsWith(LIVE_ORIGIN) || url.startsWith(FALLBACK_ORIGIN) || url.startsWith(AUTH_ORIGIN)) {
                     return false
                 }
                 runCatching {
@@ -537,6 +537,8 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val LIVE_ORIGIN = "https://imza464-cmyk.github.io/LingoNest"
+        private const val FALLBACK_ORIGIN = "https://br-icy-grass-bhsdqu67-lingonest.compute.c-10.eu-central-1.aws.neon.tech"
+        private const val AUTH_ORIGIN = "https://ep-super-grass-bhia8pi1.neonauth.c-10.eu-central-1.aws.neon.tech"
         private const val LIVE_URL = "$LIVE_ORIGIN/"
     }
 }

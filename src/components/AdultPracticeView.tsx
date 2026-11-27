@@ -9,6 +9,7 @@ import {
   Clock,
   Lightbulb,
   Lock,
+  MessageSquare,
   Mic,
   MicOff,
   RefreshCw,
@@ -26,6 +27,7 @@ import type {
 } from '../types';
 import { ADULT_ITEM_BY_ID, ADULT_MODULES } from '../data/adultCurriculum';
 import { audioEngine, matchSpokenAttempt, type VoiceRole } from '../engine/audioEngine';
+import { askContrastiveCoach } from '../engine/cloudSync';
 import {
   MS_PER_DAY,
   buildSessionQueue,
@@ -269,6 +271,8 @@ export function AdultPracticeView({
   const [speakScorePct, setSpeakScorePct] = useState<number | null>(null);
   const [bestHeard, setBestHeard] = useState('');
   const [speakingDone, setSpeakingDone] = useState(false);
+  const [coachExplain, setCoachExplain] = useState<string>('');
+  const [coachLoading, setCoachLoading] = useState<boolean>(false);
 
   const micCancelledRef = useRef(false);
   const itemStartMsRef = useRef<number>(Date.now());
@@ -309,6 +313,8 @@ export function AdultPracticeView({
     setSpeakScorePct(null);
     setBestHeard('');
     setSpeakingDone(false);
+    setCoachExplain('');
+    setCoachLoading(false);
 
     itemStartMsRef.current = Date.now();
   }, [currentIndex, currentItemId, profile.targetLang]);
@@ -396,6 +402,22 @@ export function AdultPracticeView({
     setClozeAccentWarning(false);
     setClozePassed(false);
     audioEngine.playChime('tap', profile.soundFxEnabled);
+  };
+
+  const handleAskItemCoach = async () => {
+    if (!loc || !currentItem || coachLoading) return;
+    setCoachLoading(true);
+    try {
+      const reply = await askContrastiveCoach({
+        targetLang: profile.targetLang,
+        phrase: loc.phrase,
+        learnerAttempt: clozeInput.trim() || undefined,
+        turkishTrapTr: currentItem.turkishTrapTr,
+      });
+      setCoachExplain(reply);
+    } finally {
+      setCoachLoading(false);
+    }
   };
 
   // Step 3: Word-Order Builder handlers
@@ -929,6 +951,15 @@ export function AdultPracticeView({
                   <Lightbulb size={14} aria-hidden="true" />
                   <span>İlk Harf İpucu</span>
                 </button>
+                <button
+                  type="button"
+                  className="ln-adult-btn ln-adult-btn--ghost"
+                  onClick={handleAskItemCoach}
+                  disabled={coachLoading}
+                >
+                  <MessageSquare size={14} aria-hidden="true" />
+                  <span>{coachLoading ? 'Eğitmen açıklıyor...' : 'Eğitmene Sor'}</span>
+                </button>
                 {clozeAttempts > 0 && clozeStatus !== 'correct' && clozeStatus !== 'revealed' && (
                   <button
                     type="button"
@@ -940,6 +971,13 @@ export function AdultPracticeView({
                 )}
               </div>
             </form>
+
+            {coachExplain && (
+              <div className="ln-adult-feedback-banner is-info" role="status">
+                <MessageSquare size={16} aria-hidden="true" />
+                <span>{coachExplain}</span>
+              </div>
+            )}
 
             {/* Instant Visual Diff Feedback */}
             {clozeStatus === 'wrong' && (

@@ -9,7 +9,7 @@ export type AgeMode = 'mini' | 'explorer' | 'master';
 // explorer : 8-14 yrs (Audio-First + Post-Audio Text Reveal + SVO Block Builder + Stories, R*=0.90)
 // master   : 15+ yrs (Full FSRS-5 Metrics + Turkish L1 Contrastive Lab + Production + Multi-Lang, R*=0.85)
 
-export type AppView = 'worlds' | 'play' | 'living-world' | 'stories' | 'phonetics' | 'adult-practice' | 'adult-dialogues';
+export type AppView = 'worlds' | 'play' | 'living-world' | 'stories' | 'phonetics' | 'adult-practice' | 'adult-dialogues' | 'handbook';
 
 export type CEFRLevel = 'A2' | 'B1' | 'B2';
 

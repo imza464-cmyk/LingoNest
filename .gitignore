@@ -10,3 +10,4 @@ android/local.properties
 *.idsig
 *.keystore
 android/dist/
+neon/functions/*/dist/

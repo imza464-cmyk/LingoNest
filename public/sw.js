@@ -1,6 +1,6 @@
-// LingoNest Offline-First PWA Service Worker v4
+// LingoNest Offline-First PWA Service Worker v5
 // Fixes P0-4: Precaches audio/manifest.json, never returns HTML for JSON/vpak, catches offline errors cleanly.
-const SHELL_CACHE = 'lingonest-shell-v4';
+const SHELL_CACHE = 'lingonest-shell-v5';
 const AUDIO_CACHE = 'lingonest-audio-v1';
 
 self.addEventListener('install', (event) => {

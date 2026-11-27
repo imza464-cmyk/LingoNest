@@ -202,3 +202,79 @@ export function eraseVaultCompletely(): VaultState {
   saveVault(fresh);
   return fresh;
 }
+
+/**
+ * Non-destructive optimistic concurrency merge for two VaultState snapshots.
+ * Unions profiles by id, keeps the FSRS card with higher reps / newer review timestamp,
+ * unions completedStories, keeps max phoneticScores, and keeps max dailyLog counters.
+ */
+export function mergeLingoVaults(local: VaultState, remote: VaultState): VaultState {
+  const byId = new Map<string, LearnerProfile>();
+  for (const rp of remote.profiles ?? []) {
+    if (rp && rp.id) byId.set(rp.id, rp);
+  }
+  for (const lp of local.profiles ?? []) {
+    if (!lp || !lp.id) continue;
+    const existing = byId.get(lp.id);
+    if (!existing) {
+      byId.set(lp.id, lp);
+      continue;
+    }
+
+    const mergedCards = { ...(existing.cards ?? {}) };
+    for (const [key, lc] of Object.entries(lp.cards ?? {})) {
+      const rc = mergedCards[key];
+      if (
+        !rc ||
+        (lc.reps ?? 0) > (rc.reps ?? 0) ||
+        ((lc.reps ?? 0) === (rc.reps ?? 0) && (lc.lastReviewAt ?? 0) >= (rc.lastReviewAt ?? 0))
+      ) {
+        mergedCards[key] = lc;
+      }
+    }
+
+    const mergedStories = Array.from(
+      new Set([...(existing.completedStories ?? []), ...(lp.completedStories ?? [])]),
+    );
+
+    const mergedPhonetics: Record<string, number> = { ...(existing.phoneticScores ?? {}) };
+    for (const [k, v] of Object.entries(lp.phoneticScores ?? {})) {
+      mergedPhonetics[k] = Math.max(mergedPhonetics[k] ?? 0, v);
+    }
+
+    const mergedDaily = { ...(existing.dailyLog ?? {}) };
+    for (const [dk, dl] of Object.entries(lp.dailyLog ?? {})) {
+      const rd = mergedDaily[dk];
+      if (!rd) {
+        mergedDaily[dk] = dl;
+      } else {
+        mergedDaily[dk] = {
+          dateKey: dk,
+          minutes: Math.max(rd.minutes ?? 0, dl.minutes ?? 0),
+          reviews: Math.max(rd.reviews ?? 0, dl.reviews ?? 0),
+          wordsMastered: Math.max(rd.wordsMastered ?? 0, dl.wordsMastered ?? 0),
+        };
+      }
+    }
+
+    byId.set(lp.id, {
+      ...existing,
+      ...lp,
+      cards: mergedCards,
+      completedStories: mergedStories,
+      phoneticScores: mergedPhonetics,
+      dailyLog: mergedDaily,
+    });
+  }
+
+  const profiles = Array.from(byId.values());
+  const activeProfileId = profiles.some((p) => p.id === local.activeProfileId)
+    ? local.activeProfileId
+    : profiles[0]?.id ?? '';
+
+  return {
+    activeProfileId,
+    profiles,
+    onboardingDone: Boolean(local.onboardingDone || remote.onboardingDone),
+  };
+}

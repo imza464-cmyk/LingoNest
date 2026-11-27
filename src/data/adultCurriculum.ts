@@ -2171,6 +2171,1030 @@ export const ADULT_MODULES: AdultModule[] = [
       },
     ],
   },
+{
+  "id": "academic_reasoning",
+  "order": 7,
+  "titleTr": "Akademik Sunum, Veri Yorumlama ve Kanıt Gösterme",
+  "subtitleTr": "Toplantı ve makalelerde veriye dayanarak neden-sonuç ve çıkarım kur",
+  "icon": "07",
+  "cefrRange": "B1–B2",
+  "accentHex": "#2563eb",
+  "items": [
+    {
+      "id": "acad_data_suggests",
+      "moduleId": "academic_reasoning",
+      "cefr": "B2",
+      "turkishMeaning": "Veriler bu hipotezi güçlü biçimde destekliyor.",
+      "turkishTrapTr": "\"Data\" akademik İngilizcede sıklıkla çoğul veya tekil kütle olarak kullanılır ama \"prove\" yerine temkinli akademik fiil \"suggest / support\" tercih edilir.",
+      "contextTagTr": "Veri Analizi",
+      "langs": {
+        "en": {
+          "phrase": "The data strongly supports this hypothesis.",
+          "clozeSentence": "The data strongly ___ this hypothesis.",
+          "clozeAnswer": "supports",
+          "ipa": "/ðə ˈdeɪtə ˈstrɒŋli səˈpɔːrts ðɪs haɪˈpɒθəsɪs/",
+          "exampleDialogue": "Agreed, the sample size is large enough now.",
+          "wordOrderChunks": [
+            "The data",
+            "strongly supports",
+            "this",
+            "hypothesis."
+          ]
+        },
+        "de": {
+          "phrase": "Die Daten stützen diese Hypothese eindeutig.",
+          "clozeSentence": "Die Daten ___ diese Hypothese eindeutig.",
+          "clozeAnswer": "stützen",
+          "ipa": "/diː ˈdaːtn̩ ˈʃtʏtsn̩ ˈdiːzə hypoˈteːzə ˈaɪ̯ndɔʏ̯tɪç/",
+          "exampleDialogue": "Ja, die Stichprobe ist endlich groß genug.",
+          "wordOrderChunks": [
+            "Die Daten",
+            "stützen",
+            "diese Hypothese",
+            "eindeutig."
+          ]
+        },
+        "es": {
+          "phrase": "Los datos respaldan claramente esta hipótesis.",
+          "clozeSentence": "Los datos ___ claramente esta hipótesis.",
+          "clozeAnswer": "respaldan",
+          "ipa": "/los ˈðatos resˈpaldan klaɾaˈmente ˈesta iˈpotesis/",
+          "exampleDialogue": "Exacto, la muestra ya es bastante amplia.",
+          "wordOrderChunks": [
+            "Los datos",
+            "respaldan",
+            "claramente",
+            "esta hipótesis."
+          ]
+        }
+      }
+    },
+    {
+      "id": "acad_take_into_account",
+      "moduleId": "academic_reasoning",
+      "cefr": "B2",
+      "turkishMeaning": "Mevsimsel etkileri de hesaba katmalıyız.",
+      "turkishTrapTr": "\"Hesaba katmak\" için \"*count into account\" değil, \"take into account\" veya Almanca \"berücksichtigen\", İspanyolca \"tener en cuenta\" kullanılır.",
+      "contextTagTr": "Metodoloji",
+      "langs": {
+        "en": {
+          "phrase": "We must also take seasonal effects into account.",
+          "clozeSentence": "We must also ___ seasonal effects into account.",
+          "clozeAnswer": "take",
+          "ipa": "/wi mʌst ˈɔːlsoʊ teɪk ˈsiːzənəl ɪˈfekts ˈɪntu əˈkaʊnt/",
+          "exampleDialogue": "Good catch, summer traffic always skews the baseline.",
+          "wordOrderChunks": [
+            "We must also",
+            "take",
+            "seasonal effects",
+            "into account."
+          ]
+        },
+        "de": {
+          "phrase": "Wir müssen auch saisonale Effekte berücksichtigen.",
+          "clozeSentence": "Wir müssen auch saisonale Effekte ___.",
+          "clozeAnswer": "berücksichtigen",
+          "ipa": "/viːɐ̯ ˈmʏsn̩ aʊ̯x zɛzoˈnaːlə ɛˈfɛktə bəˈʁʏkzɪçtɪɡn̩/",
+          "exampleDialogue": "Stimmt, der Sommer verzerrt sonst den Vergleich.",
+          "wordOrderChunks": [
+            "Wir müssen",
+            "auch",
+            "saisonale Effekte",
+            "berücksichtigen."
+          ]
+        },
+        "es": {
+          "phrase": "También debemos tener en cuenta los efectos estacionales.",
+          "clozeSentence": "También debemos tener en ___ los efectos estacionales.",
+          "clozeAnswer": "cuenta",
+          "ipa": "/tamˈbjen deˈβemos teˈneɾ en ˈkwenta los eˈfektos estaθjoˈnales/",
+          "exampleDialogue": "Tienes razón, el verano siempre altera la media.",
+          "wordOrderChunks": [
+            "También debemos",
+            "tener en cuenta",
+            "los efectos",
+            "estacionales."
+          ]
+        }
+      }
+    },
+    {
+      "id": "acad_contrary_to",
+      "moduleId": "academic_reasoning",
+      "cefr": "B2",
+      "turkishMeaning": "Yaygın inanışın aksine sonuçlar oldukça tutarlı.",
+      "turkishTrapTr": "\"Aksine\" derken \"*Opposite to\" yerine sabit kalıp \"Contrary to popular belief\" / DE \"Entgegen\" (+ Dativ) / ES \"En contra de lo que se cree\" kullanılır.",
+      "contextTagTr": "Argüman",
+      "langs": {
+        "en": {
+          "phrase": "Contrary to popular belief, the results are consistent.",
+          "clozeSentence": "___ to popular belief, the results are consistent.",
+          "clozeAnswer": "Contrary",
+          "ipa": "/ˈkɒntrəri tə ˈpɒpjələr bɪˈliːf ðə rɪˈzʌlts ɑːr kənˈsɪstənt/",
+          "exampleDialogue": "That really challenges our earlier assumptions.",
+          "wordOrderChunks": [
+            "Contrary to",
+            "popular belief,",
+            "the results",
+            "are consistent."
+          ]
+        },
+        "de": {
+          "phrase": "Entgegen der gängigen Meinung sind die Ergebnisse stabil.",
+          "clozeSentence": "___ der gängigen Meinung sind die Ergebnisse stabil.",
+          "clozeAnswer": "Entgegen",
+          "ipa": "/ɛntˈɡeːɡn̩ deːɐ̯ ˈɡɛŋɪɡn̩ ˈmaɪ̯nʊŋ zɪnt diː ɛɐ̯ˈɡeːpnɪsə ʃtaˈbiːl/",
+          "exampleDialogue": "Das widerlegt unsere frühere Annahme deutlich.",
+          "wordOrderChunks": [
+            "Entgegen der",
+            "gängigen Meinung",
+            "sind die Ergebnisse",
+            "stabil."
+          ]
+        },
+        "es": {
+          "phrase": "En contra de lo que se cree, los resultados son sólidos.",
+          "clozeSentence": "En ___ de lo que se cree, los resultados son sólidos.",
+          "clozeAnswer": "contra",
+          "ipa": "/en ˈkontɾa ðe lo ke se ˈkɾee los resulˈtaðos son ˈsoliðos/",
+          "exampleDialogue": "Eso cambia por completo nuestra suposición inicial.",
+          "wordOrderChunks": [
+            "En contra de",
+            "lo que se cree,",
+            "los resultados",
+            "son sólidos."
+          ]
+        }
+      }
+    },
+    {
+      "id": "acad_draw_conclusion",
+      "moduleId": "academic_reasoning",
+      "cefr": "B2",
+      "turkishMeaning": "Kesin bir sonuca varmak için henüz çok erken.",
+      "turkishTrapTr": "Türkçede \"sonuca varmak\" fiili İngilizcede \"*arrive a conclusion\" değil, eşdizimli \"draw a conclusion\" veya \"jump to conclusions\" ile kurulur.",
+      "contextTagTr": "Çıkarım",
+      "langs": {
+        "en": {
+          "phrase": "It is still too early to draw a firm conclusion.",
+          "clozeSentence": "It is still too early to ___ a firm conclusion.",
+          "clozeAnswer": "draw",
+          "ipa": "/ɪt ɪz stɪl tuː ˈɜːrli tə drɔː ə fɜːrm kənˈkluːʒən/",
+          "exampleDialogue": "Let us run one more controlled trial first.",
+          "wordOrderChunks": [
+            "It is still",
+            "too early",
+            "to draw",
+            "a firm conclusion."
+          ]
+        },
+        "de": {
+          "phrase": "Es ist noch zu früh, um ein festes Fazit zu ziehen.",
+          "clozeSentence": "Es ist noch zu früh, um ein festes Fazit zu ___.",
+          "clozeAnswer": "ziehen",
+          "ipa": "/ɛs ɪst nɔx tsuː fʁyː ʊm aɪ̯n ˈfɛstəs ˈfaːtsɪt tsuː ˈtsiːən/",
+          "exampleDialogue": "Führen wir lieber noch einen weiteren Testlauf durch.",
+          "wordOrderChunks": [
+            "Es ist noch",
+            "zu früh,",
+            "um ein festes Fazit",
+            "zu ziehen."
+          ]
+        },
+        "es": {
+          "phrase": "Todavía es demasiado pronto para sacar una conclusión firme.",
+          "clozeSentence": "Todavía es demasiado pronto para ___ una conclusión firme.",
+          "clozeAnswer": "sacar",
+          "ipa": "/toðaˈβia es demaˈsjaðo ˈpɾonto ˈpaɾa saˈkaɾ ˈuna konkluˈsjon ˈfiɾme/",
+          "exampleDialogue": "Hagamos primero una prueba controlada más.",
+          "wordOrderChunks": [
+            "Todavía es",
+            "demasiado pronto",
+            "para sacar",
+            "una conclusión firme."
+          ]
+        }
+      }
+    },
+    {
+      "id": "acad_correlation_causation",
+      "moduleId": "academic_reasoning",
+      "cefr": "B2",
+      "turkishMeaning": "İlişki olması nedensellik anlamına gelmez.",
+      "turkishTrapTr": "\"Anlamına gelmek\" için \"*does not mean to causation\" değil, doğrudan nesne alan \"imply / equate to\" kullanılır.",
+      "contextTagTr": "İstatistik",
+      "langs": {
+        "en": {
+          "phrase": "Correlation does not necessarily imply causation.",
+          "clozeSentence": "Correlation does not necessarily ___ causation.",
+          "clozeAnswer": "imply",
+          "ipa": "/ˌkɒrəˈleɪʃən dʌz nɒt ˌnesəˈserəli ɪmˈplaɪ kɔːˈzeɪʃən/",
+          "exampleDialogue": "Exactly, a third variable could explain both trends.",
+          "wordOrderChunks": [
+            "Correlation",
+            "does not",
+            "necessarily imply",
+            "causation."
+          ]
+        },
+        "de": {
+          "phrase": "Korrelation bedeutet nicht zwangsläufig Kausalität.",
+          "clozeSentence": "Korrelation ___ nicht zwangsläufig Kausalität.",
+          "clozeAnswer": "bedeutet",
+          "ipa": "/kɔʁelaˈtsjoːn bəˈdɔʏ̯tət nɪçt ˈtsvaŋslɔʏ̯fɪç kaʊ̯zaliˈtɛːt/",
+          "exampleDialogue": "Genau, ein dritter Faktor könnte beides erklären.",
+          "wordOrderChunks": [
+            "Korrelation",
+            "bedeutet",
+            "nicht zwangsläufig",
+            "Kausalität."
+          ]
+        },
+        "es": {
+          "phrase": "La correlación no implica necesariamente causalidad.",
+          "clozeSentence": "La correlación no ___ necesariamente causalidad.",
+          "clozeAnswer": "implica",
+          "ipa": "/la korelaˈθjon no imˈplika neθesaɾjaˈmente kawsaliˈðað/",
+          "exampleDialogue": "Claro, un tercer factor podría explicar ambas curvas.",
+          "wordOrderChunks": [
+            "La correlación",
+            "no implica",
+            "necesariamente",
+            "causalidad."
+          ]
+        }
+      }
+    }
+  ]
+},
+{
+  "id": "health_emergencies",
+  "order": 8,
+  "titleTr": "Sağlık, Eczane, Acil Durum ve Resmi Kurum İşlemleri",
+  "subtitleTr": "Yurt dışında doktor muayenesinde, eczanede ve resmi dairede derdini eksiksiz anlat",
+  "icon": "08",
+  "cefrRange": "A2–B1",
+  "accentHex": "#dc2626",
+  "items": [
+    {
+      "id": "hlth_sore_throat",
+      "moduleId": "health_emergencies",
+      "cefr": "A2",
+      "turkishMeaning": "Dünden beri boğazım ağrıyor ve ateşim var.",
+      "turkishTrapTr": "Belirtiler geçmişten bugüne sürdüğü için İngilizcede \"have had\", Almancada \"habe seit gestern\", İspanyolcada \"tengo ... desde ayer\" kullanılır.",
+      "contextTagTr": "Muayene",
+      "langs": {
+        "en": {
+          "phrase": "I have had a sore throat and a fever since yesterday.",
+          "clozeSentence": "I have had a ___ throat and a fever since yesterday.",
+          "clozeAnswer": "sore",
+          "ipa": "/aɪ həv hæd ə sɔːr θroʊt ənd ə ˈfiːvər sɪns ˈjestərdeɪ/",
+          "exampleDialogue": "Let me check your temperature and lungs right away.",
+          "wordOrderChunks": [
+            "I have had",
+            "a sore throat",
+            "and a fever",
+            "since yesterday."
+          ]
+        },
+        "de": {
+          "phrase": "Ich habe seit gestern Halsschmerzen und Fieber.",
+          "clozeSentence": "Ich habe ___ gestern Halsschmerzen und Fieber.",
+          "clozeAnswer": "seit",
+          "ipa": "/ɪç ˈhaːbə zaɪ̯t ˈɡɛstɐn ˈhalsʃmɛʁtsn̩ ʊnt ˈfiːbɐ/",
+          "exampleDialogue": "Ich messe sofort Fieber und höre Ihre Lunge ab.",
+          "wordOrderChunks": [
+            "Ich habe",
+            "seit gestern",
+            "Halsschmerzen",
+            "und Fieber."
+          ]
+        },
+        "es": {
+          "phrase": "Tengo dolor de garganta y fiebre desde ayer.",
+          "clozeSentence": "Tengo dolor de ___ y fiebre desde ayer.",
+          "clozeAnswer": "garganta",
+          "ipa": "/ˈteŋɡo ðoˈloɾ ðe ɣaɾˈɣanta i ˈfjeβɾe ˈdezðe aˈʝeɾ/",
+          "exampleDialogue": "Voy a tomarle la temperatura ahora mismo.",
+          "wordOrderChunks": [
+            "Tengo",
+            "dolor de garganta",
+            "y fiebre",
+            "desde ayer."
+          ]
+        }
+      }
+    },
+    {
+      "id": "hlth_prescription_meals",
+      "moduleId": "health_emergencies",
+      "cefr": "B1",
+      "turkishMeaning": "Bu ilacı günde iki kez tok karnına almalısınız.",
+      "turkishTrapTr": "\"Tok karnına\" birebir \"*on full stomach\" diye çevrilmez; doğal tıbbi ifade \"after meals / with food\", Almanca \"nach dem Essen\", İspanyolca \"después de las comidas\" şeklindedir.",
+      "contextTagTr": "Eczane",
+      "langs": {
+        "en": {
+          "phrase": "You should take this medication twice a day after meals.",
+          "clozeSentence": "You should ___ this medication twice a day after meals.",
+          "clozeAnswer": "take",
+          "ipa": "/ju ʃʊd teɪk ðɪs ˌmedɪˈkeɪʃən twaɪs ə deɪ ˈæftər miːlz/",
+          "exampleDialogue": "Got it, morning and evening after eating.",
+          "wordOrderChunks": [
+            "You should take",
+            "this medication",
+            "twice a day",
+            "after meals."
+          ]
+        },
+        "de": {
+          "phrase": "Nehmen Sie dieses Medikament zweimal täglich nach dem Essen ein.",
+          "clozeSentence": "Nehmen Sie dieses Medikament zweimal täglich ___ dem Essen ein.",
+          "clozeAnswer": "nach",
+          "ipa": "/ˈneːmən ziː ˈdiːzəs medikaˈmɛnt ˈtsvaɪ̯maːl ˈtɛːklɪç naːx deːm ˈɛsn̩ aɪ̯n/",
+          "exampleDialogue": "Verstanden, also morgens und abends nach der Mahlzeit.",
+          "wordOrderChunks": [
+            "Nehmen Sie",
+            "dieses Medikament",
+            "zweimal täglich",
+            "nach dem Essen ein."
+          ]
+        },
+        "es": {
+          "phrase": "Debe tomar este medicamento dos veces al día después de comer.",
+          "clozeSentence": "Debe ___ este medicamento dos veces al día después de comer.",
+          "clozeAnswer": "tomar",
+          "ipa": "/ˈdeβe toˈmaɾ ˈeste meðikaˈmento dos ˈβeθes al ˈdia desˈpwes ðe koˈmeɾ/",
+          "exampleDialogue": "Entendido, por la mañana y por la noche tras comer.",
+          "wordOrderChunks": [
+            "Debe tomar",
+            "este medicamento",
+            "dos veces al día",
+            "después de comer."
+          ]
+        }
+      }
+    },
+    {
+      "id": "hlth_lost_passport",
+      "moduleId": "health_emergencies",
+      "cefr": "B1",
+      "turkishMeaning": "Pasaportumu kaybettim; en yakın konsolosluğa nasıl ulaşabilirim?",
+      "turkishTrapTr": "Resmi kayıp bildiriminde İngilizce sonucu bugünü etkilediği için \"I have lost my passport\", yol sormada ise dolaylı soru sırası (\"how I can\", \"*how can I\" değil!) dikkat çeker.",
+      "contextTagTr": "Acil & Konsolosluk",
+      "langs": {
+        "en": {
+          "phrase": "I have lost my passport; how can I reach the nearest consulate?",
+          "clozeSentence": "I have ___ my passport; how can I reach the nearest consulate?",
+          "clozeAnswer": "lost",
+          "ipa": "/aɪ həv lɒst maɪ ˈpæspɔːrt haʊ kən aɪ riːtʃ ðə ˈnɪrɪst ˈkɒnsjələt/",
+          "exampleDialogue": "First file a police report here, then take line two.",
+          "wordOrderChunks": [
+            "I have lost",
+            "my passport;",
+            "how can I reach",
+            "the nearest consulate?"
+          ]
+        },
+        "de": {
+          "phrase": "Ich habe meinen Reisepass verloren; wie erreiche ich das Konsulat?",
+          "clozeSentence": "Ich habe meinen Reisepass ___; wie erreiche ich das Konsulat?",
+          "clozeAnswer": "verloren",
+          "ipa": "/ɪç ˈhaːbə ˈmaɪ̯nən ˈʁaɪ̯zəpas fɛɐ̯ˈloːʁən viː ɛɐ̯ˈʁaɪ̯çə ɪç das kɔnzuˈlaːt/",
+          "exampleDialogue": "Melden Sie den Verlust zuerst hier bei der Polizei.",
+          "wordOrderChunks": [
+            "Ich habe",
+            "meinen Reisepass verloren;",
+            "wie erreiche ich",
+            "das Konsulat?"
+          ]
+        },
+        "es": {
+          "phrase": "He perdido mi pasaporte; ¿cómo llego al consulado más cercano?",
+          "clozeSentence": "He ___ mi pasaporte; ¿cómo llego al consulado más cercano?",
+          "clozeAnswer": "perdido",
+          "ipa": "/e peɾˈðiðo mi pasaˈpoɾte ˈkomo ˈʎeɣo al konsuˈlaðo mas θeɾˈkano/",
+          "exampleDialogue": "Primero presente una denuncia aquí en comisaría.",
+          "wordOrderChunks": [
+            "He perdido",
+            "mi pasaporte;",
+            "¿cómo llego",
+            "al consulado más cercano?"
+          ]
+        }
+      }
+    },
+    {
+      "id": "hlth_appointment_reschedule",
+      "moduleId": "health_emergencies",
+      "cefr": "B1",
+      "turkishMeaning": "Yarınki randevumu haftaya ertelemem mümkün mü?",
+      "turkishTrapTr": "Randevu tarihini ileri almak için İngilizcede \"move / reschedule\", Almancada \"verschieben auf (+ Akk)\", İspanyolcada \"cambiar / aplazar para\" kullanılır.",
+      "contextTagTr": "Resmi Randevu",
+      "langs": {
+        "en": {
+          "phrase": "Would it be possible to reschedule tomorrow's appointment for next week?",
+          "clozeSentence": "Would it be possible to ___ tomorrow's appointment for next week?",
+          "clozeAnswer": "reschedule",
+          "ipa": "/wʊd ɪt bi ˈpɒsəbəl tə ˌriːˈʃedjuːl təˈmɒroʊz əˈpɔɪntmənt fər nekst wiːk/",
+          "exampleDialogue": "Tuesday at ten o'clock is open if that works for you.",
+          "wordOrderChunks": [
+            "Would it be possible",
+            "to reschedule",
+            "tomorrow's appointment",
+            "for next week?"
+          ]
+        },
+        "de": {
+          "phrase": "Wäre es möglich, meinen Termin von morgen auf nächste Woche zu verschieben?",
+          "clozeSentence": "Wäre es möglich, meinen Termin von morgen ___ nächste Woche zu verschieben?",
+          "clozeAnswer": "auf",
+          "ipa": "/ˈvɛːʁə ɛs ˈmøːklɪç ˈmaɪ̯nən tɛʁˈmiːn fɔn ˈmɔʁɡn̩ aʊ̯f ˈnɛːçstə ˈvɔxə tsuː fɛɐ̯ˈʃiːbn̩/",
+          "exampleDialogue": "Am Dienstag um zehn Uhr hätten wir noch etwas frei.",
+          "wordOrderChunks": [
+            "Wäre es möglich,",
+            "meinen Termin von morgen",
+            "auf nächste Woche",
+            "zu verschieben?"
+          ]
+        },
+        "es": {
+          "phrase": "¿Sería posible cambiar mi cita de mañana para la próxima semana?",
+          "clozeSentence": "¿Sería posible ___ mi cita de mañana para la próxima semana?",
+          "clozeAnswer": "cambiar",
+          "ipa": "/seˈɾia poˈsiβle kamˈbjaɾ mi ˈθita ðe maˈɲana ˈpaɾa la ˈpɾoksima seˈmana/",
+          "exampleDialogue": "El martes a las diez tenemos un hueco libre.",
+          "wordOrderChunks": [
+            "¿Sería posible",
+            "cambiar mi cita",
+            "de mañana",
+            "para la próxima semana?"
+          ]
+        }
+      }
+    },
+    {
+      "id": "hlth_insurance_coverage",
+      "moduleId": "health_emergencies",
+      "cefr": "B2",
+      "turkishMeaning": "Seyahat sigortam bu tetkikleri karşılıyor mu?",
+      "turkishTrapTr": "\"Karşılamak\" için \"*meet the tests\" değil, sigorta terminolojisinde \"cover\" / DE \"übernehmen\" / ES \"cubrir\" fiilleri kullanılır.",
+      "contextTagTr": "Sigorta & Hastane",
+      "langs": {
+        "en": {
+          "phrase": "Does my travel insurance cover these diagnostic tests?",
+          "clozeSentence": "Does my travel insurance ___ these diagnostic tests?",
+          "clozeAnswer": "cover",
+          "ipa": "/dʌz maɪ ˈtrævəl ɪnˈʃʊrəns ˈkʌvər ðiːz ˌdaɪəɡˈnɒstɪk tests/",
+          "exampleDialogue": "Yes, as long as you keep the itemized hospital receipt.",
+          "wordOrderChunks": [
+            "Does my",
+            "travel insurance",
+            "cover",
+            "these diagnostic tests?"
+          ]
+        },
+        "de": {
+          "phrase": "Übernimmt meine Reiseversicherung diese Untersuchungen?",
+          "clozeSentence": "___ meine Reiseversicherung diese Untersuchungen?",
+          "clozeAnswer": "Übernimmt",
+          "ipa": "/yːbɐˈnɪmt ˈmaɪ̯nə ˈʁaɪ̯zəfɛɐ̯ˌzɪçəʁʊŋ ˈdiːzə ʊntɐˈzuːxʊŋən/",
+          "exampleDialogue": "Ja, bewahren Sie bitte die detaillierte Quittung auf.",
+          "wordOrderChunks": [
+            "Übernimmt",
+            "meine Reiseversicherung",
+            "diese",
+            "Untersuchungen?"
+          ]
+        },
+        "es": {
+          "phrase": "¿Mi seguro de viaje cubre estas pruebas médicas?",
+          "clozeSentence": "¿Mi seguro de viaje ___ estas pruebas médicas?",
+          "clozeAnswer": "cubre",
+          "ipa": "/mi seˈɣuɾo ðe ˈβjaxe ˈkuβɾe ˈestas ˈpɾweβas ˈmeðikas/",
+          "exampleDialogue": "Sí, siempre que conserve la factura detallada del centro.",
+          "wordOrderChunks": [
+            "¿Mi seguro",
+            "de viaje",
+            "cubre",
+            "estas pruebas médicas?"
+          ]
+        }
+      }
+    }
+  ]
+},
+{
+  "id": "negotiation_boundaries",
+  "order": 9,
+  "titleTr": "Sözleşme Müzakeresi, İkna ve Profesyonel Sınır Koyma",
+  "subtitleTr": "Fiyat, kapsam ve teslim takvimi görüşmelerinde kırmadan net sınır çiz",
+  "icon": "09",
+  "cefrRange": "B2",
+  "accentHex": "#0f766e",
+  "items": [
+    {
+      "id": "neg_meet_halfway",
+      "moduleId": "negotiation_boundaries",
+      "cefr": "B2",
+      "turkishMeaning": "İki taraf için de adil bir orta noktada buluşabiliriz.",
+      "turkishTrapTr": "\"Orta noktada buluşmak\" İngilizcede \"meet halfway\", Almancada \"uns in der Mitte treffen\", İspanyolcada \"llegar a un punto intermedio\" ile ifade edilir.",
+      "contextTagTr": "Pazarlık",
+      "langs": {
+        "en": {
+          "phrase": "We can meet halfway on a timeline that works for both sides.",
+          "clozeSentence": "We can meet ___ on a timeline that works for both sides.",
+          "clozeAnswer": "halfway",
+          "ipa": "/wi kən miːt ˌhæfˈweɪ ɒn ə ˈtaɪmlaɪn ðət wɜːrks fər boʊθ saɪdz/",
+          "exampleDialogue": "That sounds reasonable; let us review the milestones.",
+          "wordOrderChunks": [
+            "We can",
+            "meet halfway",
+            "on a timeline",
+            "that works for both sides."
+          ]
+        },
+        "de": {
+          "phrase": "Wir können uns beim Zeitplan fair in der Mitte treffen.",
+          "clozeSentence": "Wir können uns beim Zeitplan fair in der ___ treffen.",
+          "clozeAnswer": "Mitte",
+          "ipa": "/viːɐ̯ ˈkœnən ʊns baɪ̯m ˈtsaɪ̯tplaːn fɛːɐ̯ ɪn deːɐ̯ ˈmɪtə ˈtʁɛfn̩/",
+          "exampleDialogue": "Das klingt fair; gehen wir die Meilensteine kurz durch.",
+          "wordOrderChunks": [
+            "Wir können uns",
+            "beim Zeitplan",
+            "fair in der Mitte",
+            "treffen."
+          ]
+        },
+        "es": {
+          "phrase": "Podemos llegar a un punto intermedio justo para ambas partes.",
+          "clozeSentence": "Podemos ___ a un punto intermedio justo para ambas partes.",
+          "clozeAnswer": "llegar",
+          "ipa": "/poˈðemos ʎeˈɣaɾ a un ˈpunto inteɾˈmeðjo ˈxusto ˈpaɾa ˈambas ˈpaɾtes/",
+          "exampleDialogue": "Me parece razonable; revisemos las entregas clave.",
+          "wordOrderChunks": [
+            "Podemos llegar",
+            "a un punto intermedio",
+            "justo para",
+            "ambas partes."
+          ]
+        }
+      }
+    },
+    {
+      "id": "neg_out_of_scope",
+      "moduleId": "negotiation_boundaries",
+      "cefr": "B2",
+      "turkishMeaning": "Bu talep mevcut sözleşme kapsamımızın dışında kalıyor.",
+      "turkishTrapTr": "Sınır koyarken suçlayıcı dil yerine nesnel \"falls outside the current scope\" / DE \"liegt außerhalb des vereinbarten Umfangs\" kullanılır.",
+      "contextTagTr": "Kapsam Koruma",
+      "langs": {
+        "en": {
+          "phrase": "That request falls outside the scope of our current agreement.",
+          "clozeSentence": "That request falls ___ the scope of our current agreement.",
+          "clozeAnswer": "outside",
+          "ipa": "/ðæt rɪˈkwest fɔːlz ˌaʊtˈsaɪd ðə skoʊp əv ˈaʊər ˈkʌrənt əˈɡriːmənt/",
+          "exampleDialogue": "Understood, let us scope it as a separate phase-two item.",
+          "wordOrderChunks": [
+            "That request",
+            "falls outside",
+            "the scope of",
+            "our current agreement."
+          ]
+        },
+        "de": {
+          "phrase": "Dieser Wunsch liegt außerhalb unseres vereinbarten Projektumfangs.",
+          "clozeSentence": "Dieser Wunsch liegt ___ unseres vereinbarten Projektumfangs.",
+          "clozeAnswer": "außerhalb",
+          "ipa": "/ˈdiːzɐ vʊnʃ liːkt ˈaʊ̯sɐhalp ˈʊnzəʁəs fɛɐ̯ˈaɪ̯nbaːɐ̯tn̩ pʁoˈjɛktʊmfaŋs/",
+          "exampleDialogue": "Verstanden, planen wir das als eigene zweite Phase ein.",
+          "wordOrderChunks": [
+            "Dieser Wunsch",
+            "liegt außerhalb",
+            "unseres vereinbarten",
+            "Projektumfangs."
+          ]
+        },
+        "es": {
+          "phrase": "Esa solicitud queda fuera del alcance de nuestro acuerdo actual.",
+          "clozeSentence": "Esa solicitud queda ___ del alcance de nuestro acuerdo actual.",
+          "clozeAnswer": "fuera",
+          "ipa": "/ˈesa soliθiˈtuð ˈkeða ˈfweɾa ðel alˈkanθe ðe ˈnwestɾo aˈkweɾðo akˈtwal/",
+          "exampleDialogue": "Comprendido, lo presupuestamos aparte para la segunda fase.",
+          "wordOrderChunks": [
+            "Esa solicitud",
+            "queda fuera",
+            "del alcance de",
+            "nuestro acuerdo actual."
+          ]
+        }
+      }
+    },
+    {
+      "id": "neg_bandwidth_capacity",
+      "moduleId": "negotiation_boundaries",
+      "cefr": "B2",
+      "turkishMeaning": "Bu hafta yeni bir proje üstlenecek kapasitem maalesef yok.",
+      "turkishTrapTr": "\"Üstlenmek\" fiili İngilizcede \"take on\", Almancada \"übernehmen\", İspanyolcada \"asumir\" ile kurulur.",
+      "contextTagTr": "İş Yükü Sınırı",
+      "langs": {
+        "en": {
+          "phrase": "Unfortunately, I do not have the capacity to take on another project this week.",
+          "clozeSentence": "Unfortunately, I do not have the capacity to take ___ another project this week.",
+          "clozeAnswer": "on",
+          "ipa": "/ʌnˈfɔːrtʃənətli aɪ du nɒt hæv ðə kəˈpæsəti tə teɪk ɒn əˈnʌðər ˈprɒdʒekt ðɪs wiːk/",
+          "exampleDialogue": "Thanks for flagging that early so we can rebalance.",
+          "wordOrderChunks": [
+            "Unfortunately, I do not",
+            "have the capacity",
+            "to take on",
+            "another project this week."
+          ]
+        },
+        "de": {
+          "phrase": "Leider habe ich diese Woche keine Kapazität, ein weiteres Projekt zu übernehmen.",
+          "clozeSentence": "Leider habe ich diese Woche keine Kapazität, ein weiteres Projekt zu ___.",
+          "clozeAnswer": "übernehmen",
+          "ipa": "/ˈlaɪ̯dɐ ˈhaːbə ɪç ˈdiːzə ˈvɔxə ˈkaɪ̯nə kapatsiˈtɛːt aɪ̯n ˈvaɪ̯təʁəs pʁoˈjɛkt tsuː yːbɐˈneːmən/",
+          "exampleDialogue": "Danke für den frühen Hinweis, dann verteilen wir um.",
+          "wordOrderChunks": [
+            "Leider habe ich",
+            "diese Woche keine Kapazität,",
+            "ein weiteres Projekt",
+            "zu übernehmen."
+          ]
+        },
+        "es": {
+          "phrase": "Lamentablemente, esta semana no tengo margen para asumir otro proyecto.",
+          "clozeSentence": "Lamentablemente, esta semana no tengo margen para ___ otro proyecto.",
+          "clozeAnswer": "asumir",
+          "ipa": "/lamentaβleˈmente ˈesta seˈmana no ˈteŋɡo ˈmaɾxen ˈpaɾa asuˈmiɾ ˈotɾo pɾoˈʝekto/",
+          "exampleDialogue": "Gracias por avisar con tiempo para reorganizar al equipo.",
+          "wordOrderChunks": [
+            "Lamentablemente,",
+            "esta semana no tengo margen",
+            "para asumir",
+            "otro proyecto."
+          ]
+        }
+      }
+    },
+    {
+      "id": "neg_contingent_upon",
+      "moduleId": "negotiation_boundaries",
+      "cefr": "B2",
+      "turkishMeaning": "Bu indirim yıllık ödeme taahhüdüne bağlıdır.",
+      "turkishTrapTr": "\"Bir şeye bağlı olmak (koşullu)\" resmi sözleşmelerde \"is contingent on / subject to\" kalıbıyla ifade edilir.",
+      "contextTagTr": "Fiyatlandırma",
+      "langs": {
+        "en": {
+          "phrase": "This discount is contingent on an annual billing commitment.",
+          "clozeSentence": "This discount is ___ on an annual billing commitment.",
+          "clozeAnswer": "contingent",
+          "ipa": "/ðɪs ˈdɪskaʊnt ɪz kənˈtɪndʒənt ɒn ən ˈænjuəl ˈbɪlɪŋ kəˈmɪtmənt/",
+          "exampleDialogue": "Fair enough, annual billing works well for our finance team.",
+          "wordOrderChunks": [
+            "This discount",
+            "is contingent on",
+            "an annual",
+            "billing commitment."
+          ]
+        },
+        "de": {
+          "phrase": "Dieser Rabatt setzt eine jährliche Zahlungsbindung voraus.",
+          "clozeSentence": "Dieser Rabatt ___ eine jährliche Zahlungsbindung voraus.",
+          "clozeAnswer": "setzt",
+          "ipa": "/ˈdiːzɐ ʁaˈbat zɛtst ˈaɪ̯nə ˈjɛːɐ̯lɪçə ˈtsaːlʊŋsbɪndʊŋ foˈʁaʊ̯s/",
+          "exampleDialogue": "Einverstanden, die Jahresabrechnung passt unserer Buchhaltung.",
+          "wordOrderChunks": [
+            "Dieser Rabatt",
+            "setzt",
+            "eine jährliche Zahlungsbindung",
+            "voraus."
+          ]
+        },
+        "es": {
+          "phrase": "Este descuento está sujeto a un compromiso de pago anual.",
+          "clozeSentence": "Este descuento está ___ a un compromiso de pago anual.",
+          "clozeAnswer": "sujeto",
+          "ipa": "/ˈeste ðesˈkwento esˈta suˈxeto a un kompɾoˈmiso ðe ˈpaɣo aˈnwal/",
+          "exampleDialogue": "De acuerdo, la facturación anual encaja con finanzas.",
+          "wordOrderChunks": [
+            "Este descuento",
+            "está sujeto a",
+            "un compromiso",
+            "de pago anual."
+          ]
+        }
+      }
+    },
+    {
+      "id": "neg_put_in_writing",
+      "moduleId": "negotiation_boundaries",
+      "cefr": "B1",
+      "turkishMeaning": "Yanlış anlaşılmaları önlemek için konuştuğumuz maddeleri yazılı hale getirelim.",
+      "turkishTrapTr": "\"Yazılı hale getirmek\" İngilizcede \"*make written\" değil, deyimsel \"put it in writing\" / DE \"schriftlich festhalten\" / ES \"dejar por escrito\" şeklindedir.",
+      "contextTagTr": "Mutabakat",
+      "langs": {
+        "en": {
+          "phrase": "Let us put these agreed terms in writing to avoid any misunderstanding.",
+          "clozeSentence": "Let us put these agreed terms in ___ to avoid any misunderstanding.",
+          "clozeAnswer": "writing",
+          "ipa": "/let əs pʊt ðiːz əˈɡriːd tɜːrmz ɪn ˈraɪtɪŋ tə əˈvɔɪd ˈeni ˌmɪsʌndərˈstændɪŋ/",
+          "exampleDialogue": "Great idea, I will send a summary email right after this call.",
+          "wordOrderChunks": [
+            "Let us put",
+            "these agreed terms",
+            "in writing",
+            "to avoid any misunderstanding."
+          ]
+        },
+        "de": {
+          "phrase": "Halten wir diese Punkte schriftlich fest, um Missverständnisse zu vermeiden.",
+          "clozeSentence": "Halten wir diese Punkte ___ fest, um Missverständnisse zu vermeiden.",
+          "clozeAnswer": "schriftlich",
+          "ipa": "/ˈhaltn̩ viːɐ̯ ˈdiːzə ˈpʊŋktə ˈʃʁɪftlɪç fɛst ʊm ˈmɪsfɛɐ̯ˌʃtɛndnɪsə tsuː fɛɐ̯ˈmaɪ̯dn̩/",
+          "exampleDialogue": "Sehr gut, ich schicke gleich nach dem Gespräch eine Zusammenfassung.",
+          "wordOrderChunks": [
+            "Halten wir",
+            "diese Punkte",
+            "schriftlich fest,",
+            "um Missverständnisse zu vermeiden."
+          ]
+        },
+        "es": {
+          "phrase": "Dejemos estos puntos por escrito para evitar cualquier malentendido.",
+          "clozeSentence": "Dejemos estos puntos por ___ para evitar cualquier malentendido.",
+          "clozeAnswer": "escrito",
+          "ipa": "/deˈxemos ˈestos ˈpuntos poɾ esˈkɾito ˈpaɾa eβiˈtaɾ kwalˈkjeɾ malentenˈdiðo/",
+          "exampleDialogue": "Perfecto, te mando un correo de resumen nada más colgar.",
+          "wordOrderChunks": [
+            "Dejemos",
+            "estos puntos",
+            "por escrito",
+            "para evitar cualquier malentendido."
+          ]
+        }
+      }
+    }
+  ]
+},
+{
+  "id": "connectors_nuance",
+  "order": 10,
+  "titleTr": "İleri Bağlaçlar, Nüans ve Akıcı Söylem Geçişleri",
+  "subtitleTr": "Kısa ve kopuk cümleleri doğal zıtlık, koşul ve özet bağlaçlarıyla birbirine ör",
+  "icon": "10",
+  "cefrRange": "B2",
+  "accentHex": "#7c3aed",
+  "items": [
+    {
+      "id": "conn_despite_fact",
+      "moduleId": "connectors_nuance",
+      "cefr": "B2",
+      "turkishMeaning": "Sürenin dar olmasına rağmen ekip kusursuz bir sürüm çıkardı.",
+      "turkishTrapTr": "\"Despite / In spite of\" edattır ve doğrudan cümle ALMAZ (\"*Despite time was short\" YANLIŞTIR!); isim grubu (\"Despite the tight deadline\") veya \"despite the fact that...\" alır! Almanca \"Trotz\" Genitiv, \"Obwohl\" yan cümle alır.",
+      "contextTagTr": "Zıtlık Bağlacı",
+      "langs": {
+        "en": {
+          "phrase": "Despite the tight deadline, the team delivered a flawless release.",
+          "clozeSentence": "___ the tight deadline, the team delivered a flawless release.",
+          "clozeAnswer": "Despite",
+          "ipa": "/dɪˈspaɪt ðə taɪt ˈdedlaɪn ðə tiːm dɪˈlɪvərd ə ˈflɔːləs rɪˈliːs/",
+          "exampleDialogue": "Everyone stayed focused on the critical path.",
+          "wordOrderChunks": [
+            "Despite",
+            "the tight deadline,",
+            "the team delivered",
+            "a flawless release."
+          ]
+        },
+        "de": {
+          "phrase": "Trotz der knappen Frist hat das Team eine fehlerfreie Version geliefert.",
+          "clozeSentence": "___ der knappen Frist hat das Team eine fehlerfreie Version geliefert.",
+          "clozeAnswer": "Trotz",
+          "ipa": "/tʁɔts deːɐ̯ ˈknapn̩ fʁɪst hat das tiːm ˈaɪ̯nə ˈfeːlɐfʁaɪ̯ə vɛʁˈzjoːn ɡəˈliːfɐt/",
+          "exampleDialogue": "Alle haben sich auf das Wesentliche konzentriert.",
+          "wordOrderChunks": [
+            "Trotz der",
+            "knappen Frist",
+            "hat das Team",
+            "eine fehlerfreie Version geliefert."
+          ]
+        },
+        "es": {
+          "phrase": "A pesar del plazo ajustado, el equipo entregó una versión impecable.",
+          "clozeSentence": "A ___ del plazo ajustado, el equipo entregó una versión impecable.",
+          "clozeAnswer": "pesar",
+          "ipa": "/a peˈsaɾ ðel ˈplaθo axusˈtaðo el eˈkipo entɾeˈɣo ˈuna βeɾˈsjon impeˈkaβle/",
+          "exampleDialogue": "Todo el mundo mantuvo el foco en lo esencial.",
+          "wordOrderChunks": [
+            "A pesar del",
+            "plazo ajustado,",
+            "el equipo entregó",
+            "una versión impecable."
+          ]
+        }
+      }
+    },
+    {
+      "id": "conn_as_long_as",
+      "moduleId": "connectors_nuance",
+      "cefr": "B2",
+      "turkishMeaning": "Testler geçtiği sürece bu değişikliği yayına alabiliriz.",
+      "turkishTrapTr": "\"-diği sürece\" koşul bağlacı İngilizcede gelecek için bile geniş zamanla (\"as long as the tests pass\"), İspanyolcada ise Subjuntivo (\"siempre que ... pasen\") ile kurulur!",
+      "contextTagTr": "Koşul Bağlacı",
+      "langs": {
+        "en": {
+          "phrase": "We can deploy this change as long as all automated tests pass.",
+          "clozeSentence": "We can deploy this change as ___ as all automated tests pass.",
+          "clozeAnswer": "long",
+          "ipa": "/wi kən dɪˈplɔɪ ðɪs tʃeɪndʒ əz lɒŋ əz ɔːl ˈɔːtəmeɪtɪd tests pæs/",
+          "exampleDialogue": "All green on staging, so we are ready.",
+          "wordOrderChunks": [
+            "We can deploy",
+            "this change",
+            "as long as",
+            "all automated tests pass."
+          ]
+        },
+        "de": {
+          "phrase": "Wir können die Änderung ausrollen, solange alle Tests erfolgreich durchlaufen.",
+          "clozeSentence": "Wir können die Änderung ausrollen, ___ alle Tests erfolgreich durchlaufen.",
+          "clozeAnswer": "solange",
+          "ipa": "/viːɐ̯ ˈkœnən diː ˈɛndəʁʊŋ ˈaʊ̯sʁɔlən zoˈlaŋə ˈalə tɛsts ɛɐ̯ˈfɔlkʁaɪ̯ç ˈdʊʁçlaʊ̯fn̩/",
+          "exampleDialogue": "Auf der Testumgebung ist bereits alles grün.",
+          "wordOrderChunks": [
+            "Wir können",
+            "die Änderung ausrollen,",
+            "solange alle Tests",
+            "erfolgreich durchlaufen."
+          ]
+        },
+        "es": {
+          "phrase": "Podemos desplegar este cambio siempre que pasen todas las pruebas.",
+          "clozeSentence": "Podemos desplegar este cambio ___ que pasen todas las pruebas.",
+          "clozeAnswer": "siempre",
+          "ipa": "/poˈðemos despleˈɣaɾ ˈeste ˈkambjo ˈsjempɾe ke ˈpasen ˈtoðas las ˈpɾweβas/",
+          "exampleDialogue": "Ya están todas en verde en preproducción.",
+          "wordOrderChunks": [
+            "Podemos desplegar",
+            "este cambio",
+            "siempre que",
+            "pasen todas las pruebas."
+          ]
+        }
+      }
+    },
+    {
+      "id": "conn_otherwise",
+      "moduleId": "connectors_nuance",
+      "cefr": "B1",
+      "turkishMeaning": "Yedeği şimdi alalım; aksi takdirde bütün ayarları kaybedebiliriz.",
+      "turkishTrapTr": "Almancada \"sonst / andernfalls\" zarftır ve cümlenin başına geldiğinde 1. öge sayıldığı için hemen ardından çekimli fiil (\"verlieren wir\") gelir!",
+      "contextTagTr": "Uyarı & Sonuç",
+      "langs": {
+        "en": {
+          "phrase": "Let us back up the config now; otherwise, we might lose our settings.",
+          "clozeSentence": "Let us back up the config now; ___, we might lose our settings.",
+          "clozeAnswer": "otherwise",
+          "ipa": "/let əs bæk ʌp ðə kənˈfɪɡ naʊ ˈʌðərwaɪz wi maɪt luːz ˈaʊər ˈsetɪŋz/",
+          "exampleDialogue": "Good call, exporting a snapshot right now.",
+          "wordOrderChunks": [
+            "Let us back up",
+            "the config now;",
+            "otherwise, we might",
+            "lose our settings."
+          ]
+        },
+        "de": {
+          "phrase": "Sichern wir die Konfiguration jetzt, sonst verlieren wir unsere Einstellungen.",
+          "clozeSentence": "Sichern wir die Konfiguration jetzt, ___ verlieren wir unsere Einstellungen.",
+          "clozeAnswer": "sonst",
+          "ipa": "/ˈzɪçɐn viːɐ̯ diː kɔnfiɡuʁaˈtsjoːn jɛtst zɔnst fɛɐ̯ˈliːʁən viːɐ̯ ˈʊnzəʁə ˈaɪ̯nʃtɛlʊŋən/",
+          "exampleDialogue": "Gute Idee, ich erstelle sofort ein Backup.",
+          "wordOrderChunks": [
+            "Sichern wir",
+            "die Konfiguration jetzt,",
+            "sonst verlieren wir",
+            "unsere Einstellungen."
+          ]
+        },
+        "es": {
+          "phrase": "Guardemos una copia ahora; de lo contrario, podríamos perder los ajustes.",
+          "clozeSentence": "Guardemos una copia ahora; de lo ___, podríamos perder los ajustes.",
+          "clozeAnswer": "contrario",
+          "ipa": "/ɡwaɾˈðemos ˈuna ˈkopja aˈoɾa de lo konˈtɾaɾjo poˈðɾiamos peɾˈðeɾ los aˈxustes/",
+          "exampleDialogue": "Bien pensado, voy a exportarla enseguida.",
+          "wordOrderChunks": [
+            "Guardemos",
+            "una copia ahora;",
+            "de lo contrario,",
+            "podríamos perder los ajustes."
+          ]
+        }
+      }
+    },
+    {
+      "id": "conn_in_a_nutshell",
+      "moduleId": "connectors_nuance",
+      "cefr": "B2",
+      "turkishMeaning": "Özetle, kaliteyi düşürmeden süreci hızlandırmamız gerekiyor.",
+      "turkishTrapTr": "\"Özetle / tek cümleyle\" için konuşma dilinde \"In a nutshell / Long story short\", Almanca \"Kurz gesagt\", İspanyolca \"En pocas palabras\" çok doğal bir geçiş sağlar.",
+      "contextTagTr": "Özetleme",
+      "langs": {
+        "en": {
+          "phrase": "In a nutshell, we need to speed up delivery without cutting corners.",
+          "clozeSentence": "In a ___, we need to speed up delivery without cutting corners.",
+          "clozeAnswer": "nutshell",
+          "ipa": "/ɪn ə ˈnʌtʃel wi niːd tə spiːd ʌp dɪˈlɪvəri wɪˈðaʊt ˈkʌtɪŋ ˈkɔːrnərz/",
+          "exampleDialogue": "Clear and concise; automating the build will get us there.",
+          "wordOrderChunks": [
+            "In a nutshell,",
+            "we need to",
+            "speed up delivery",
+            "without cutting corners."
+          ]
+        },
+        "de": {
+          "phrase": "Kurz gesagt müssen wir schneller liefern, ohne an Qualität zu sparen.",
+          "clozeSentence": "___ gesagt müssen wir schneller liefern, ohne an Qualität zu sparen.",
+          "clozeAnswer": "Kurz",
+          "ipa": "/kʊʁts ɡəˈzaːkt ˈmʏsn̩ viːɐ̯ ˈʃnɛlɐ ˈliːfɐn ˈoːnə an kvaliˈtɛːt tsuː ˈʃpaːʁən/",
+          "exampleDialogue": "Klare Ansage; mit besserer Automatisierung schaffen wir das.",
+          "wordOrderChunks": [
+            "Kurz gesagt",
+            "müssen wir",
+            "schneller liefern,",
+            "ohne an Qualität zu sparen."
+          ]
+        },
+        "es": {
+          "phrase": "En pocas palabras, debemos agilizar la entrega sin bajar la calidad.",
+          "clozeSentence": "En ___ palabras, debemos agilizar la entrega sin bajar la calidad.",
+          "clozeAnswer": "pocas",
+          "ipa": "/en ˈpokas paˈlaβɾas deˈβemos axiliˈθaɾ la enˈtɾeɣa sin baˈxaɾ la kaliˈðað/",
+          "exampleDialogue": "Totalmente claro; automatizar las pruebas nos dará ese margen.",
+          "wordOrderChunks": [
+            "En pocas palabras,",
+            "debemos agilizar",
+            "la entrega",
+            "sin bajar la calidad."
+          ]
+        }
+      }
+    },
+    {
+      "id": "conn_that_being_said",
+      "moduleId": "connectors_nuance",
+      "cefr": "B2",
+      "turkishMeaning": "Bununla birlikte, uzun vadeli bakım maliyetini de göz ardı edemeyiz.",
+      "turkishTrapTr": "Karşı argümanı kabul ettikten sonra kendi çekincenizi eklemek için \"That being said / Having said that\", DE \"Allerdings\", ES \"Dicho esto\" üst düzey bir geçiş kurar.",
+      "contextTagTr": "Dengeli Geçiş",
+      "langs": {
+        "en": {
+          "phrase": "That being said, we cannot ignore the long-term maintenance cost.",
+          "clozeSentence": "That ___ said, we cannot ignore the long-term maintenance cost.",
+          "clozeAnswer": "being",
+          "ipa": "/ðæt ˈbiːɪŋ sed wi ˈkænɒt ɪɡˈnɔːr ðə ˈlɒŋ tɜːrm ˈmeɪntənəns kɒst/",
+          "exampleDialogue": "True, cheap shortcuts today always cost double next year.",
+          "wordOrderChunks": [
+            "That being said,",
+            "we cannot ignore",
+            "the long-term",
+            "maintenance cost."
+          ]
+        },
+        "de": {
+          "phrase": "Allerdings dürfen wir die langfristigen Wartungskosten nicht übersehen.",
+          "clozeSentence": "___ dürfen wir die langfristigen Wartungskosten nicht übersehen.",
+          "clozeAnswer": "Allerdings",
+          "ipa": "/ˈalɐdɪŋs ˈdʏʁfn̩ viːɐ̯ diː ˈlaŋfʁɪstɪɡn̩ ˈvaʁtʊŋskɔstn̩ nɪçt yːbɐˈzeːən/",
+          "exampleDialogue": "Stimmt, schnelle Notlösungen rächen sich später immer.",
+          "wordOrderChunks": [
+            "Allerdings",
+            "dürfen wir",
+            "die langfristigen Wartungskosten",
+            "nicht übersehen."
+          ]
+        },
+        "es": {
+          "phrase": "Dicho esto, no podemos pasar por alto el coste de mantenimiento.",
+          "clozeSentence": "___ esto, no podemos pasar por alto el coste de mantenimiento.",
+          "clozeAnswer": "Dicho",
+          "ipa": "/ˈditʃo ˈesto no poˈðemos paˈsaɾ poɾ ˈalto el ˈkoste ðe manteniˈmjento/",
+          "exampleDialogue": "Cierto, los atajos baratos salen caros el año que viene.",
+          "wordOrderChunks": [
+            "Dicho esto,",
+            "no podemos",
+            "pasar por alto",
+            "el coste de mantenimiento."
+          ]
+        }
+      }
+    }
+  ]
+}
 ];
 
 export const ADULT_DIALOGUES: AdultDialogue[] = [
@@ -2219,7 +3243,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             text: {
               en: 'No problem! I live here since three years, and actually I am stay late today.',
               de: 'Kein Problem! Ich wohne hier für drei Jahre, und aktuell bin ich daran gewöhnt.',
-              es: 'Sin problema! Soy viviendo aquí por tres años, y actualmente es fácil.',
+              es: '¡Sin problema! Soy viviendo aquí por tres años, y actualmente es fácil.',
             },
             turkishHint: '"since 3 years" / "für 3 Jahre" / "soy viviendo" tuzakları',
             isBest: false,
@@ -2230,7 +3254,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             text: {
               en: 'No worries! I am lived here three years, and I am used to wake up early.',
               de: 'Kein Problem! Ich gewohnt seit drei Jahren hier, und ich freue mich.',
-              es: 'Tranquilo! Yo vivo aquí desde tres años y estoy acostumbrado levantarme.',
+              es: '¡Tranquilo! Yo vivo aquí desde tres años y estoy acostumbrado levantarme.',
             },
             turkishHint: 'Eksik edatlar ve "be used to + V1" hatası',
             isBest: false,
@@ -2333,7 +3357,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             text: {
               en: 'I am agree, let us do! I wait you on Friday.',
               de: 'Ich bin einverstanden, machen wir! Ich warte dich am Freitag.',
-              es: 'Estoy de acuerdo que sí! Te espero para el viernes.',
+              es: '¡Estoy de acuerdo que sí! Te espero para el viernes.',
             },
             turkishHint: '"I am agree" ve "wait you" hatası',
             isBest: false,
@@ -3057,7 +4081,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             text: {
               en: 'Everything was goodly! Could we have the check and divide money?',
               de: 'Alles war lecker! Wir wollen die Konto teilen.',
-              es: 'Todo era bueno! ¿Nos trae la factura para dividir?',
+              es: '¡Todo era bueno! ¿Nos trae la factura para dividir?',
             },
             turkishHint: 'Yanlış zarf ("goodly"), yanlış "ser/estar" ("era bueno")',
             isBest: false,
@@ -3238,7 +4262,7 @@ export const ADULT_DIALOGUES: AdultDialogue[] = [
             text: {
               en: 'I am agree! Let us put out the fixes until Monday.',
               de: 'Ich bin einverstanden! Schieben wir auf bis Montag.',
-              es: 'Estoy de acuerdo! Dejemos para lunes las pruebas.',
+              es: '¡Estoy de acuerdo! Dejemos para lunes las pruebas.',
             },
             turkishHint: '"I am agree" + yanlış phrasal verb "put out" (söndürmek)',
             isBest: false,
