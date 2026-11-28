@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
-import type { AdultDialogue, AdultModule, LearnerProfile } from '../types';
+import type { AdultDialogue, AdultModule, LanguageCode, LearnerProfile } from '../types';
+import { LANGUAGE_META } from '../data/curriculum';
 import { audioEngine } from '../engine/audioEngine';
 import {
   MS_PER_DAY,
@@ -28,6 +29,7 @@ export interface AdultStudioViewProps {
   dialogues: AdultDialogue[];
   profile: LearnerProfile;
   languageNameTr: string;
+  onSelectLang?: (lang: LanguageCode) => void;
   onStartModule: (moduleId: string) => void;
   onStartDueQueue?: () => void;
   onOpenDialogues: () => void;
@@ -51,6 +53,7 @@ export function AdultStudioView({
   dialogues,
   profile,
   languageNameTr,
+  onSelectLang,
   onStartModule,
   onStartDueQueue,
   onOpenDialogues,
@@ -164,9 +167,35 @@ export function AdultStudioView({
             </div>
             <h1 className="ln-adult-h1">Günlük Çalışma Masası</h1>
             <p className="ln-adult-subtitle">
-              Türkçe düşünürken sık yapılan çeviri hatalarını düzeltin, aktif cümle kurun ve
-              kalıcı tekrar planınızla ilerleyin.
+              İngilizce, Almanca ve İspanyolca için 3.891 stüdyo nöral ses, FSRS-5 aralıklı tekrar
+              planı ve Türkçe düşünürken sık yapılan çeviri hatalarına odaklı aktif cümle pratiği.
+              Kayıt olmadan hemen başlayabilirsiniz.
             </p>
+            {onSelectLang && (
+              <div className="ln-chip-group" role="group" aria-label="Hedef Dil Seçimi" style={{ marginTop: '10px' }}>
+                {(['en', 'de', 'es'] as const).map((code) => {
+                  const meta = LANGUAGE_META[code];
+                  const active = profile.targetLang === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      className="ln-chip-btn"
+                      aria-pressed={active}
+                      onClick={() => onSelectLang(code)}
+                      style={
+                        active
+                          ? { background: 'rgba(56, 189, 248, 0.2)', borderColor: '#38bdf8', color: '#f8fafc', fontWeight: 800 }
+                          : { background: 'rgba(15, 23, 42, 0.45)', borderColor: 'rgba(148, 163, 184, 0.3)', color: '#cbd5e1' }
+                      }
+                    >
+                      <span>{meta.flag}</span>
+                      <span>{meta.nameTr}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="ln-adult-cta-wrap">

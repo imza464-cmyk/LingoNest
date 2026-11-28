@@ -132,6 +132,19 @@ export function AgeModeSwitcher({
           </span>
         )}
       </div>
+      <p
+        style={{
+          margin: '2px 0 8px',
+          fontSize: '0.82rem',
+          fontWeight: 600,
+          color: 'var(--ln-ink-soft)',
+          lineHeight: 1.4,
+        }}
+      >
+        {currentMode === 'mini'
+          ? 'İlk girişte yaş modunu seçebilir veya dilediğiniz zaman değiştirebilirsiniz. Çocuk Kilidi, küçüklerin ayarları veya yaş modunu yanlışlıkla değiştirmesini önler.'
+          : 'Yaş grubunuza uygun öğrenme modunu seçin; Mini (4–7) modunda Çocuk Kilidi otomatik olarak devreye girer.'}
+      </p>
 
       <div className="ln-age-switcher-pills" role="tablist" aria-label="Bilişsel Yaş Modu">
         {MODE_PILLS.map((pill) => {

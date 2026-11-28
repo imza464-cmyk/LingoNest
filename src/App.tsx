@@ -528,6 +528,15 @@ export function App() {
     updateActiveProfile((prev) => ({ ...prev, targetLang: nextLang }));
   }, [activeProfile.soundFxEnabled, activeProfile.targetLang, updateActiveProfile]);
 
+  const handleSelectLanguage = useCallback(
+    (nextLang: LanguageCode) => {
+      if (nextLang === activeProfile.targetLang) return;
+      audioEngine.playChime('tap', activeProfile.soundFxEnabled);
+      updateActiveProfile((prev) => ({ ...prev, targetLang: nextLang }));
+    },
+    [activeProfile.soundFxEnabled, activeProfile.targetLang, updateActiveProfile],
+  );
+
   const toggleSoundFx = useCallback(() => {
     updateActiveProfile((prev) => ({ ...prev, soundFxEnabled: !prev.soundFxEnabled }));
   }, [updateActiveProfile]);
@@ -866,6 +875,7 @@ export function App() {
             dialogues={ADULT_DIALOGUES}
             profile={activeProfile}
             languageNameTr={langMeta.nameTr}
+            onSelectLang={handleSelectLanguage}
             onStartModule={handleStartAdultModule}
             onStartDueQueue={handleStartAdultDueQueue}
             onOpenDialogues={() => setView('adult-dialogues')}
@@ -935,6 +945,7 @@ export function App() {
             worlds={WORLDS}
             profile={activeProfile}
             languageNameTr={langMeta.nameTr}
+            onSelectLang={handleSelectLanguage}
             onStartWorld={handleStartWorld}
             onOpenLivingWorld={() => setView('living-world')}
             onOpenStories={() => setView(isMini ? 'stories' : 'graded-stories')}
@@ -982,6 +993,45 @@ export function App() {
             onUpdateScore={handleUpdatePhoneticScore}
             onBack={() => setView('worlds')}
           />
+        )}
+
+        {!isInFocusedSession && (
+          <footer
+            style={{
+              marginTop: '28px',
+              paddingTop: '14px',
+              borderTop: '1px solid rgba(148, 163, 184, 0.25)',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              fontSize: '0.82rem',
+              color: 'var(--ln-ink-soft)',
+              fontWeight: 600,
+            }}
+          >
+            <span>
+              Gizlilik ve Ebeveyn Güveni: İlerlemeniz varsayılan olarak yalnızca bu cihazda saklanır;
+              bulut senkronizasyonu isteğe bağlıdır. Çocuklara yönelik reklam veya takip içermez.
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowParentModal(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'inherit',
+                textDecoration: 'underline',
+                font: 'inherit',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Ebeveyn Paneli ve Veri Yönetimi
+            </button>
+          </footer>
         )}
       </main>
 

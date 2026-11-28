@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BookOpen, Clock, Ear, Layers, Play, Sparkles, Star, Trees, Volume2 } from 'lucide-react';
-import type { LearnerProfile, WorldData } from '../types';
+import type { LanguageCode, LearnerProfile, WorldData } from '../types';
+import { LANGUAGE_META } from '../data/curriculum';
 import { audioEngine } from '../engine/audioEngine';
 import { TR_VOICE, TR_WORLD_INTROS } from '../data/voiceScripts';
 import {
@@ -14,6 +15,7 @@ export interface WorldMapViewProps {
   worlds: WorldData[];
   profile: LearnerProfile;
   languageNameTr: string;
+  onSelectLang?: (lang: LanguageCode) => void;
   onStartWorld: (worldId: string) => void;
   onOpenLivingWorld: () => void;
   onOpenStories: () => void;
@@ -32,6 +34,7 @@ export function WorldMapView({
   worlds,
   profile,
   languageNameTr,
+  onSelectLang,
   onStartWorld,
   onOpenLivingWorld,
   onOpenStories,
@@ -105,14 +108,50 @@ export function WorldMapView({
       {/* Hero Banner */}
       {isMini ? (
         <div className="ln-hero-banner">
-          <div style={{ flex: '1 1 100%', marginBottom: '4px' }}>
+          <div style={{ flex: '1 1 100%', marginBottom: '6px' }}>
             <h1 style={{ fontSize: 'clamp(1.25rem, 2.2vw, 1.65rem)' }}>
               LingoNest — {languageNameTr} Öğrenme Adaları
             </h1>
-            <p style={{ margin: '4px 0 0', color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
-              Dinleyerek, eşleştirerek ve yüksek sesle tekrar ederek temel kelimeleri keşfedin.
+            <p style={{ margin: '4px 0 8px', color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
+              İngilizce, Almanca ve İspanyolca: 3.891 stüdyo nöral ses, FSRS-5 aralıklı tekrar ve
+              yanlış cevabın puan kaybettirmediği oyunlarla keşfedin.
             </p>
+            {onSelectLang && (
+              <div className="ln-chip-group" role="group" aria-label="Hedef Dil Seçimi" style={{ marginBottom: '6px' }}>
+                {(['en', 'de', 'es'] as const).map((code) => {
+                  const meta = LANGUAGE_META[code];
+                  const active = profile.targetLang === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      className="ln-chip-btn"
+                      aria-pressed={active}
+                      onClick={() => onSelectLang(code)}
+                      style={
+                        active
+                          ? { background: '#e0e7ff', borderColor: '#4f46e5', color: '#1e1b4b', fontWeight: 800 }
+                          : undefined
+                      }
+                    >
+                      <span>{meta.flag}</span>
+                      <span>{meta.nameTr}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
+          {worlds[0] && (
+            <button
+              type="button"
+              className="ln-clay-btn ln-clay-btn--mint ln-touch-xl"
+              onClick={() => onStartWorld(worlds[0].id)}
+            >
+              <Play size={24} fill="currentColor" />
+              <span>Kayıt Olmadan Hemen Dene</span>
+            </button>
+          )}
           <button
             type="button"
             className="ln-clay-btn ln-clay-btn--gold ln-touch-xl"
@@ -128,7 +167,7 @@ export function WorldMapView({
 
           <button
             type="button"
-            className="ln-clay-btn ln-clay-btn--mint ln-touch-xl"
+            className="ln-clay-btn ln-clay-btn--soft ln-touch-xl"
             onClick={() => {
               audioEngine.playChime('tap', profile.soundFxEnabled);
               onOpenLivingWorld();
@@ -147,8 +186,44 @@ export function WorldMapView({
               {languageNameTr} Çalışma ve Keşif Alanı
             </h1>
             <p style={{ margin: 0, color: 'var(--ln-ink-soft)', fontWeight: 700 }}>
-              Tematik kelime grupları, 240 kelimelik sözlük, 18 derslik dilbilgisi ve kısa hikayelerle adım adım ilerleyin.
+              İngilizce, Almanca ve İspanyolca için 3.891 stüdyo nöral ses, FSRS-5 aralıklı tekrar,
+              240 kelimelik sözlük ve 18 derslik dilbilgisi. Yanlış cevap puan veya can kaybettirmez.
             </p>
+            {onSelectLang && (
+              <div className="ln-chip-group" role="group" aria-label="Hedef Dil Seçimi">
+                {(['en', 'de', 'es'] as const).map((code) => {
+                  const meta = LANGUAGE_META[code];
+                  const active = profile.targetLang === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      className="ln-chip-btn"
+                      aria-pressed={active}
+                      onClick={() => onSelectLang(code)}
+                      style={
+                        active
+                          ? { background: '#e0e7ff', borderColor: '#4f46e5', color: '#1e1b4b', fontWeight: 800 }
+                          : undefined
+                      }
+                    >
+                      <span>{meta.flag}</span>
+                      <span>{meta.nameTr}</span>
+                    </button>
+                  );
+                })}
+                {worlds[0] && (
+                  <button
+                    type="button"
+                    className="ln-clay-btn ln-clay-btn--mint"
+                    onClick={() => onStartWorld(worlds[0].id)}
+                  >
+                    <Play size={16} fill="currentColor" />
+                    <span>Kayıt Olmadan Hemen Dene</span>
+                  </button>
+                )}
+              </div>
+            )}
             <div className="ln-chip-group" style={{ marginTop: '4px' }}>
               <span className="ln-chip-btn">
                 ⭐ Uyanan: <strong>{totalAwake} / {totalItems}</strong>
