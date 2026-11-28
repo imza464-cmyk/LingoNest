@@ -101,6 +101,7 @@ export function App() {
   const [handbookChapterId, setHandbookChapterId] = useState<string | undefined>(undefined);
   const [showParentModal, setShowParentModal] = useState(false);
   const [showCloudModal, setShowCloudModal] = useState(false);
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
 
   const switcherBackRef = useRef<(() => boolean) | null>(null);
   const viewSubBackRef = useRef<(() => boolean) | null>(null);
@@ -870,6 +871,52 @@ export function App() {
       )}
 
       <main id="mainContent" className="ln-main">
+        {!isInFocusedSession && (
+          <div
+            role="note"
+            aria-label="Test sürümü ve sorumluluk reddi bildirimi"
+            style={{
+              marginBottom: '14px',
+              padding: '10px 14px',
+              borderRadius: '14px',
+              background: isMaster ? 'rgba(30, 41, 59, 0.78)' : '#fffbeb',
+              border: isMaster ? '1px solid rgba(251, 191, 36, 0.35)' : '1.5px solid #fde68a',
+              color: isMaster ? '#fde68a' : '#78350f',
+              fontSize: '0.82rem',
+              lineHeight: 1.45,
+              fontWeight: 600,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <span style={{ flex: '1 1 240px' }}>
+              <strong>Test Sitesi ve Sorumluluk Reddi Beyanı:</strong> Bu uygulama şu anda geliştirme
+              ve açık test aşamasında olan bir test sitesidir. İçerikler, seslendirmeler ve alıştırmalar
+              yalnızca eğitim ve deneme amaçlıdır; resmi veya ticari garanti niteliği taşımaz.
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowDisclaimerModal(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'inherit',
+                textDecoration: 'underline',
+                font: 'inherit',
+                fontWeight: 800,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Tam Beyanı Oku
+            </button>
+          </div>
+        )}
+
         {/* MASTER (15+ ADULT) COGNITIVE STUDIO VIEWS */}
         {isMaster && view === 'worlds' && (
           <AdultStudioView
@@ -1014,25 +1061,44 @@ export function App() {
             }}
           >
             <span>
-              Gizlilik ve Ebeveyn Güveni: İlerlemeniz varsayılan olarak yalnızca bu cihazda saklanır;
-              bulut senkronizasyonu isteğe bağlıdır. Çocuklara yönelik reklam veya takip içermez.
+              Gizlilik ve Açık Test Sürümü: Bu site geliştirme aşamasında bir test sitesidir.
+              İlerlemeniz varsayılan olarak yalnızca bu cihazda saklanır; çocuklara yönelik reklam
+              veya takip içermez.
             </span>
-            <button
-              type="button"
-              onClick={() => setShowParentModal(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'inherit',
-                textDecoration: 'underline',
-                font: 'inherit',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Ebeveyn Paneli ve Veri Yönetimi
-            </button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowDisclaimerModal(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'inherit',
+                  textDecoration: 'underline',
+                  font: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Sorumluluk Reddi Beyanı
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowParentModal(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'inherit',
+                  textDecoration: 'underline',
+                  font: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Ebeveyn Paneli ve Veri Yönetimi
+              </button>
+            </div>
           </footer>
         )}
       </main>
@@ -1179,6 +1245,64 @@ export function App() {
           onRestoreCloudVault={(nextVault) => setVault(nextVault)}
           onClose={() => setShowCloudModal(false)}
         />
+      )}
+
+      {showDisclaimerModal && (
+        <div
+          className="ln-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ln-disclaimer-heading"
+          onClick={() => setShowDisclaimerModal(false)}
+        >
+          <div
+            className="ln-parent-modal"
+            style={{ maxWidth: '620px', gap: '14px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ln-modal-header">
+              <h2 id="ln-disclaimer-heading" style={{ margin: 0, fontSize: '1.25rem' }}>
+                Test Sitesi Bildirimi ve Sorumluluk Reddi Beyanı
+              </h2>
+              <button
+                type="button"
+                className="ln-close-btn"
+                onClick={() => setShowDisclaimerModal(false)}
+                aria-label="Kapat"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ margin: 0, lineHeight: 1.55, fontSize: '0.92rem' }}>
+              <strong>1. Açık Test Sürümü Bildirimi:</strong> LingoNest şu anda aktif geliştirme,
+              içerik iyileştirme ve saha denemesi aşamasında olan bir <strong>test sitesidir</strong>.
+            </p>
+            <p style={{ margin: 0, lineHeight: 1.55, fontSize: '0.92rem' }}>
+              <strong>2. Sorumluluk Reddi:</strong> Uygulamada yer alan kelime listeleri, dil bilgisi
+              anlatımları, okuma metinleri, nöral ses kayıtları ve konuşma değerlendirmeleri yalnızca
+              bireysel dil pratiği ve deneme amacıyla &quot;olduğu gibi&quot; sunulmaktadır; resmi bir
+              dil yeterlilik belgesi, pedagojik/hukuki taahhüt veya kesintisiz hizmet garantisi
+              oluşturmaz. Test süreci boyunca özellikler değiştirilebilir, veriler güncellenebilir
+              veya sıfırlanabilir; kullanımdan doğabilecek doğrudan ya da dolaylı sonuçlardan site
+              geliştiricisi sorumlu tutulamaz.
+            </p>
+            <p style={{ margin: 0, lineHeight: 1.55, fontSize: '0.92rem' }}>
+              <strong>3. Veri Gizliliği ve İletişim:</strong> İlerleme verileriniz varsayılan olarak
+              yalnızca kendi cihazınızda saklanır; çocuklara yönelik reklam veya üçüncü taraf takip
+              bulunmaz. İletişim: <a href="mailto:imza464@gmail.com">imza464@gmail.com</a>
+            </p>
+
+            <button
+              type="button"
+              className="ln-clay-btn ln-clay-btn--mint"
+              onClick={() => setShowDisclaimerModal(false)}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              <span>Anladım, Kapat</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {!vault.onboardingDone && <OnboardingModal onComplete={handleCompleteOnboarding} />}
