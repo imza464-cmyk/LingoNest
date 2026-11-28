@@ -48,6 +48,7 @@ import {
   type VaultState,
 } from './engine/storage';
 import { getCloudSession, pullCloudVault, pushCloudVault } from './engine/cloudSync';
+import { sendLingoVisitorPulse } from './engine/visitorPulse';
 import { AgeModeSwitcher } from './components/AgeModeSwitcher';
 import { WorldMapView } from './components/WorldMapView';
 import { PlaySessionView } from './components/PlaySessionView';
@@ -225,6 +226,7 @@ export function App() {
     if (targetHash && window.location.hash !== targetHash) {
       window.history.replaceState(null, '', targetHash);
     }
+    sendLingoVisitorPulse(`/LingoNest/${targetHash || window.location.hash || '#dunyalar'}`);
   }, [view, handbookChapterId, vault.activeProfileId, vault.profiles]);
 
   const activeProfile: LearnerProfile = useMemo(() => {
