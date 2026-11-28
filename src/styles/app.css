@@ -1583,6 +1583,9 @@ button.ln-piko-trigger:active {
 }
 
 .ln-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 48px;
   padding: 10px 16px;
   border-radius: var(--ln-radius-md);
@@ -4232,9 +4235,9 @@ body[data-age-mode='explorer'] {
     flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
-    min-height: calc(56px + env(safe-area-inset-top));
-    padding: max(8px, env(safe-area-inset-top)) 12px 8px;
-    gap: 8px;
+    min-height: calc(52px + env(safe-area-inset-top));
+    padding: max(6px, env(safe-area-inset-top)) 10px 6px;
+    gap: 6px;
   }
 
   .ln-topbar .ln-nav-pills {
@@ -4242,16 +4245,16 @@ body[data-age-mode='explorer'] {
   }
 
   .ln-brand-btn {
-    padding: 2px 6px 2px 2px;
-    gap: 8px;
+    padding: 2px 4px 2px 2px;
+    gap: 6px;
     min-width: 0;
     flex-shrink: 1;
   }
 
   .ln-brand-orb {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
     box-shadow: 0 3px 0 var(--ln-teal-deep), 0 6px 12px rgba(14, 165, 233, 0.24);
     flex-shrink: 0;
   }
@@ -4266,11 +4269,15 @@ body[data-age-mode='explorer'] {
 
   .ln-brand-text {
     min-width: 0;
+    overflow: hidden;
   }
 
   .ln-brand-text strong {
-    font-size: 1.05rem;
+    font-size: 0.96rem;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .ln-brand-text small {
@@ -4278,33 +4285,33 @@ body[data-age-mode='explorer'] {
   }
 
   .ln-topbar-actions {
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
   .ln-topbar-actions .ln-chip-btn {
-    min-height: 38px;
-    height: 38px;
-    padding: 0 10px;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 8px;
     border-radius: 999px;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
   }
 
   .ln-topbar-actions .ln-icon-btn {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
   }
 
   .ln-topbar-actions .ln-parent-btn {
-    min-height: 38px;
-    height: 38px;
-    padding: 0 10px;
-    gap: 5px;
-    font-size: 0.82rem;
-    max-width: 132px;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 0.78rem;
+    max-width: 108px;
   }
 
   .ln-topbar-actions .ln-parent-btn > span {
@@ -4560,6 +4567,11 @@ body[data-age-mode='explorer'] {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .ln-mode-mini .ln-world-map .ln-hero-banner > div:first-child,
+  .ln-mode-mini .ln-world-map .ln-hero-banner > .ln-clay-btn--mint {
+    grid-column: 1 / -1;
   }
 
   .ln-mode-mini .ln-world-map .ln-hero-banner .ln-clay-btn {

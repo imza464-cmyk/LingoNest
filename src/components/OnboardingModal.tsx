@@ -245,8 +245,8 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(112px, 1fr))',
-              gap: '10px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))',
+              gap: '8px',
             }}
           >
             {LANG_OPTIONS.map((code) => {
@@ -265,15 +265,15 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
-                    minHeight: '52px',
-                    padding: '10px 12px',
+                    gap: '6px',
+                    minHeight: '50px',
+                    padding: '10px 8px',
                     borderRadius: '18px',
                     background: selected ? '#ecfeff' : '#ffffff',
                     border: `3px solid ${selected ? '#0ea5e9' : '#cbd5e1'}`,
                     boxShadow: selected ? '0 4px 0 #38bdf8' : '0 4px 0 #cbd5e1',
                     fontFamily: 'var(--ln-font-display)',
-                    fontSize: '0.98rem',
+                    fontSize: '0.92rem',
                     fontWeight: 700,
                     color: '#0f172a',
                   }}
